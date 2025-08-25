@@ -146,77 +146,80 @@ export default function UnifiedMainScreen() {
           },
         ]}
       >
-        <TouchableOpacity
-          style={[
-            styles.tabItem,
-            {
-              backgroundColor:
-                activeTab === "ai"
-                  ? theme.colors.accent.primary
-                  : "transparent",
-            },
-          ]}
-          onPress={() => handleTabPress("ai")}
-        >
-          <Image
-            source={icons.aiPowered}
+        {/* Content wrapper for proper centering within full-width background */}
+        <View style={styles.tabsContainer}>
+          <TouchableOpacity
             style={[
-              styles.tabIcon,
+              styles.tabItem,
               {
-                tintColor: activeTab === "ai" ? "white" : theme.colors.text.secondary,
+                backgroundColor:
+                  activeTab === "ai"
+                    ? theme.colors.accent.primary
+                    : "transparent",
               },
             ]}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
+            onPress={() => handleTabPress("ai")}
+          >
+            <Image
+              source={icons.aiPowered}
+              style={[
+                styles.tabIcon,
+                {
+                  tintColor: activeTab === "ai" ? "white" : theme.colors.text.secondary,
+                },
+              ]}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[
-            styles.tabItem,
-            {
-              backgroundColor:
-                activeTab === "history"
-                  ? theme.colors.accent.primary
-                  : "transparent",
-            },
-          ]}
-          onPress={() => handleTabPress("history")}
-        >
-          <Image
-            source={icons.history}
+          <TouchableOpacity
             style={[
-              styles.tabIcon,
+              styles.tabItem,
               {
-                tintColor: activeTab === "history" ? "white" : theme.colors.text.secondary,
+                backgroundColor:
+                  activeTab === "history"
+                    ? theme.colors.accent.primary
+                    : "transparent",
               },
             ]}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
+            onPress={() => handleTabPress("history")}
+          >
+            <Image
+              source={icons.history}
+              style={[
+                styles.tabIcon,
+                {
+                  tintColor: activeTab === "history" ? "white" : theme.colors.text.secondary,
+                },
+              ]}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[
-            styles.tabItem,
-            {
-              backgroundColor:
-                activeTab === "billing"
-                  ? theme.colors.accent.primary
-                  : "transparent",
-            },
-          ]}
-          onPress={() => handleTabPress("billing")}
-        >
-          <Image
-            source={icons.billing}
+          <TouchableOpacity
             style={[
-              styles.tabIcon,
+              styles.tabItem,
               {
-                tintColor: activeTab === "billing" ? "white" : theme.colors.text.secondary,
+                backgroundColor:
+                  activeTab === "billing"
+                    ? theme.colors.accent.primary
+                    : "transparent",
               },
             ]}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
+            onPress={() => handleTabPress("billing")}
+          >
+            <Image
+              source={icons.billing}
+              style={[
+                styles.tabIcon,
+                {
+                  tintColor: activeTab === "billing" ? "white" : theme.colors.text.secondary,
+                },
+              ]}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -228,26 +231,37 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
+    marginBottom: '12%', 
   },
   bottomToolbar: {
-    height: '10%',
-    position: 'absolute',  // Position absolutely
-    bottom: 0,             // Stick to bottom with no gap
+    minHeight: '15%', 
+    position: 'absolute',
+    bottom: 0,
     left: 0,
     right: 0,
-    flexDirection: "row",
     borderTopWidth: 1,
-    paddingVertical: 8,
-    paddingBottom: 8,      // Reduced from 20 to remove extra gap
-    backgroundColor: 'transparent', // Will be overridden by theme
+    paddingTop: 0, 
+    paddingBottom: 12, 
+    paddingHorizontal: 0, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+  },
+  tabsContainer: {
+    flexDirection: "row",
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    width: '100%',
+    paddingHorizontal: 16, 
   },
   tabItem: {
     flex: 1,
     alignItems: "center",
+    justifyContent: 'center',
     paddingVertical: 12,
     paddingHorizontal: 8,
     borderRadius: 12,
     marginHorizontal: 4,
+    minHeight: 48, 
   },
   tabIcon: {
     width: 24,
