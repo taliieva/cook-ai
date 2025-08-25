@@ -4,25 +4,46 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Dimensions,
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Dimensions,
+  Modal,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
+
+// Mock countries data with flags
+const countries = [
+  { name: 'All Countries', flag: '🌍', code: 'all' },
+  { name: 'Italian', flag: '🇮🇹', code: 'it' },
+  { name: 'Chinese', flag: '🇨🇳', code: 'cn' },
+  { name: 'Mexican', flag: '🇲🇽', code: 'mx' },
+  { name: 'Japanese', flag: '🇯🇵', code: 'jp' },
+  { name: 'French', flag: '🇫🇷', code: 'fr' },
+  { name: 'Indian', flag: '🇮🇳', code: 'in' },
+  { name: 'American', flag: '🇺🇸', code: 'us' },
+  { name: 'Thai', flag: '🇹🇭', code: 'th' },
+];
 
 export default function IngredientsSearchScreen() {
   const router = useRouter();
   const theme = useTheme();
   const [searchText, setSearchText] = useState('');
-  const [ingredients, setIngredients] = useState<string[]>([]);
+  const [ingredients, setIngredients] = useState([]);
   const [activeTab, setActiveTab] = useState('history');
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showCountrySelector, setShowCountrySelector] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState(countries[0]);
+  
+  // Mock user state - change these to test different scenarios
+  const [isLoggedIn, setIsLoggedIn] = useState(true); // Set to false to test logged out state
+  const [userPlan, setUserPlan] = useState('free'); // 'free' or 'pro'
 
   const handleAddIngredient = () => {
     if (searchText.trim() && !ingredients.includes(searchText.trim())) {
@@ -31,7 +52,7 @@ export default function IngredientsSearchScreen() {
     }
   };
 
-  const handleRemoveIngredient = (ingredientToRemove: string) => {
+  const handleRemoveIngredient = (ingredientToRemove) => {
     setIngredients(ingredients.filter(ingredient => ingredient !== ingredientToRemove));
   };
 
@@ -39,7 +60,7 @@ export default function IngredientsSearchScreen() {
     router.push('/main/dishes');
   };
 
-  const handleTabPress = (tab: string) => {
+  const handleTabPress = (tab) => {
     setActiveTab(tab);
     // Handle navigation based on tab
     switch(tab) {
@@ -49,11 +70,193 @@ export default function IngredientsSearchScreen() {
       case 'billing':
         // Navigate to billing
         break;
-      case 'settings':
-        // Navigate to settings
+    }
+  };
+
+  const handleProfileMenuOption = (option) => {
+    setShowProfileMenu(false);
+    switch(option) {
+      case 'login':
+        // Navigate to login page
+        console.log('Navigate to login');
+        break;
+      case 'privacy':
+        console.log('Navigate to Privacy & Policy');
+        break;
+      case 'terms':
+        console.log('Navigate to Terms of Use');
+        break;
+      case 'liked':
+        console.log('Navigate to Liked Recipes');
+        break;
+      case 'saved':
+        console.log('Navigate to Saved Recipes');
+        break;
+      case 'upgrade':
+        console.log('Navigate to Upgrade Plan');
         break;
     }
   };
+
+  const handleCountrySelect = (country) => {
+    setSelectedCountry(country);
+    setShowCountrySelector(false);
+  };
+
+  const ProfileMenu = () => (
+    <Modal
+      visible={showProfileMenu}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={() => setShowProfileMenu(false)}
+    >
+      <TouchableOpacity 
+        style={styles.modalOverlay}
+        activeOpacity={1}
+        onPress={() => setShowProfileMenu(false)}
+      >
+        <View style={[styles.profileMenu, { 
+          backgroundColor: theme.colors.background.secondary,
+          borderColor: theme.colors.border 
+        }]}>
+          {!isLoggedIn ? (
+            // Not logged in - show only login button
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => handleProfileMenuOption('login')}
+            >
+              <Ionicons name="log-in-outline" size={20} color={theme.colors.text.primary} />
+              <Text style={[styles.menuText, { color: theme.colors.text.primary }]}>
+                Log in
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            // Logged in - show profile options and plan
+            <>
+              {/* Your Plan Section */}
+              <View style={styles.planSection}>
+                <Text style={[styles.planTitle, { color: theme.colors.text.primary }]}>
+                  Your Plan
+                </Text>
+                <View style={styles.planContent}>
+                  <View style={[styles.planBadge, { 
+                    backgroundColor: userPlan === 'pro' ? theme.colors.accent.primary + '20' : theme.colors.text.secondary + '20'
+                  }]}>
+                    <Text style={[styles.planLabel, { 
+                      color: userPlan === 'pro' ? theme.colors.accent.primary : theme.colors.text.secondary 
+                    }]}>
+                      {userPlan === 'pro' ? 'Premium' : 'Free'}
+                    </Text>
+                  </View>
+                  {userPlan === 'free' && (
+                    <TouchableOpacity 
+                      style={[styles.upgradeButton, { backgroundColor: theme.colors.accent.primary }]}
+                      onPress={() => handleProfileMenuOption('upgrade')}
+                    >
+                      <Text style={styles.upgradeButtonText}>Upgrade</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+
+              <View style={[styles.menuDivider, { backgroundColor: theme.colors.border }]} />
+
+              {/* Profile Menu Options */}
+              <TouchableOpacity 
+                style={styles.menuItem}
+                onPress={() => handleProfileMenuOption('privacy')}
+              >
+                <Ionicons name="shield-outline" size={20} color={theme.colors.text.primary} />
+                <Text style={[styles.menuText, { color: theme.colors.text.primary }]}>
+                  Privacy & Policy
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.menuItem}
+                onPress={() => handleProfileMenuOption('terms')}
+              >
+                <Ionicons name="document-text-outline" size={20} color={theme.colors.text.primary} />
+                <Text style={[styles.menuText, { color: theme.colors.text.primary }]}>
+                  Terms of Use
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.menuItem}
+                onPress={() => handleProfileMenuOption('liked')}
+              >
+                <Ionicons name="heart-outline" size={20} color={theme.colors.text.primary} />
+                <Text style={[styles.menuText, { color: theme.colors.text.primary }]}>
+                  Liked Recipes
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.menuItem}
+                onPress={() => handleProfileMenuOption('saved')}
+              >
+                <Ionicons name="bookmark-outline" size={20} color={theme.colors.text.primary} />
+                <Text style={[styles.menuText, { color: theme.colors.text.primary }]}>
+                  Saved Recipes
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
+
+  const CountrySelector = () => (
+    <Modal
+      visible={showCountrySelector}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={() => setShowCountrySelector(false)}
+    >
+      <TouchableOpacity 
+        style={styles.modalOverlay}
+        activeOpacity={1}
+        onPress={() => setShowCountrySelector(false)}
+      >
+        <View style={[styles.countrySelector, { 
+          backgroundColor: theme.colors.background.secondary,
+          borderColor: theme.colors.border 
+        }]}>
+          <View style={styles.countrySelectorHeader}>
+            <Text style={[styles.countrySelectorTitle, { color: theme.colors.text.primary }]}>
+              Select Cuisine
+            </Text>
+            <TouchableOpacity onPress={() => setShowCountrySelector(false)}>
+              <Ionicons name="close" size={24} color={theme.colors.text.primary} />
+            </TouchableOpacity>
+          </View>
+          <ScrollView style={styles.countryList}>
+            {countries.map((country, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[styles.countryItem, {
+                  backgroundColor: selectedCountry.code === country.code ? theme.colors.accent.primary + '15' : 'transparent'
+                }]}
+                onPress={() => handleCountrySelect(country)}
+              >
+                <Text style={styles.countryFlag}>{country.flag}</Text>
+                <Text style={[styles.countryName, { 
+                  color: selectedCountry.code === country.code ? theme.colors.accent.primary : theme.colors.text.primary 
+                }]}>
+                  {country.name}
+                </Text>
+                {selectedCountry.code === country.code && (
+                  <Ionicons name="checkmark" size={20} color={theme.colors.accent.primary} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
@@ -62,7 +265,21 @@ export default function IngredientsSearchScreen() {
         backgroundColor={theme.colors.background.primary}
       />
       
-      {/* Search Input Section */}
+      {/* Profile Section */}
+      <View style={styles.profileSection}>
+        <TouchableOpacity 
+          style={styles.profileButton}
+          onPress={() => setShowProfileMenu(true)}
+        >
+          <Ionicons 
+            name="person-circle-outline" 
+            size={28} 
+            color={theme.colors.text.primary} 
+          />
+        </TouchableOpacity>
+      </View>
+
+      {/* Search Input Section with Country Selector */}
       <View style={styles.searchSection}>
         <View style={[styles.searchContainer, { 
           backgroundColor: theme.colors.background.secondary,
@@ -83,6 +300,16 @@ export default function IngredientsSearchScreen() {
             onSubmitEditing={handleAddIngredient}
             returnKeyType="done"
           />
+          
+          {/* Country Selector */}
+          <TouchableOpacity 
+            style={[styles.countryButton, { borderColor: theme.colors.border }]}
+            onPress={() => setShowCountrySelector(true)}
+          >
+            <Text style={styles.countryFlag}>{selectedCountry.flag}</Text>
+            <Ionicons name="chevron-down" size={16} color={theme.colors.text.secondary} />
+          </TouchableOpacity>
+          
           {searchText.length > 0 && (
             <TouchableOpacity onPress={handleAddIngredient} style={styles.addButton}>
               <Ionicons 
@@ -131,7 +358,7 @@ export default function IngredientsSearchScreen() {
                 color={theme.colors.text.secondary} 
               />
               <Text style={[styles.emptyText, { color: theme.colors.text.secondary }]}>
-                Add ingredients to find amazing dishes!
+                Add ingredients to find amazing dishes from {selectedCountry.name.toLowerCase()} cuisine!
               </Text>
             </View>
           )}
@@ -151,7 +378,7 @@ export default function IngredientsSearchScreen() {
         />
       </View>
 
-      {/* Bottom Toolbar */}
+      {/* Simplified Bottom Toolbar (removed settings) */}
       <View style={[styles.bottomToolbar, { 
         backgroundColor: theme.colors.background.secondary,
         borderTopColor: theme.colors.border 
@@ -189,24 +416,10 @@ export default function IngredientsSearchScreen() {
             Billing
           </Text>
         </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.tabItem}
-          onPress={() => handleTabPress('settings')}
-        >
-          <Ionicons 
-            name={activeTab === 'settings' ? 'settings' : 'settings-outline'} 
-            size={24} 
-            color={activeTab === 'settings' ? theme.colors.accent.primary : theme.colors.text.secondary} 
-          />
-          <Text style={[
-            styles.tabLabel,
-            { color: activeTab === 'settings' ? theme.colors.accent.primary : theme.colors.text.secondary }
-          ]}>
-            Settings
-          </Text>
-        </TouchableOpacity>
       </View>
+
+      <ProfileMenu />
+      <CountrySelector />
     </SafeAreaView>
   );
 }
@@ -215,9 +428,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  profileSection: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 5,
+  },
+  profileButton: {
+    padding: 8,
+  },
   searchSection: {
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 10,
     paddingBottom: 15,
   },
   searchContainer: {
@@ -236,8 +459,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '400',
   },
+  countryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderRadius: 15,
+    marginRight: 8,
+  },
+  countryFlag: {
+    fontSize: 16,
+    marginRight: 4,
+  },
   addButton: {
-    marginLeft: 10,
+    marginLeft: 5,
   },
   ingredientsSection: {
     flex: 1,
@@ -305,5 +541,105 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     marginTop: 4,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-start',
+    paddingTop: 100,
+    paddingHorizontal: 20,
+  },
+  profileMenu: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  planSection: {
+    marginBottom: 16,
+  },
+  planTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  planContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  planBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  planLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  upgradeButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16,
+  },
+  upgradeButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  menuDivider: {
+    height: 1,
+    marginVertical: 12,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  menuText: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginLeft: 12,
+  },
+  countrySelector: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderWidth: 1,
+    maxHeight: height * 0.6,
+  },
+  countrySelectorHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+  },
+  countrySelectorTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  countryList: {
+    flex: 1,
+  },
+  countryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  countryName: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginLeft: 12,
+    flex: 1,
   },
 });
