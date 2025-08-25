@@ -6,7 +6,6 @@ import React, { useEffect, useState } from 'react';
 import {
     Alert,
     Dimensions,
-    Image,
     Keyboard,
     KeyboardAvoidingView,
     Platform,
@@ -51,14 +50,6 @@ export default function BillingScreen() {
   });
   
   const [isFormValid, setIsFormValid] = useState(false);
-  const [activeTab, setActiveTab] = useState('billing'); // Set billing as active
-
-  // Import your custom icons from assets/images folder
-  const icons = {
-    aiPowered: require("../../../assets/images/ai-powered.png"),
-    history: require("../../../assets/images/ai-history.png"),
-    billing: require("../../../assets/images/ai-billing.png"),
-  };
 
   // Plan pricing
   const plans = {
@@ -149,23 +140,6 @@ export default function BillingScreen() {
 
   const handleBack = () => {
     router.back();
-  };
-
-  const handleTabPress = (tab) => {
-    // Handle navigation based on tab
-    switch(tab) {
-      case 'ai':
-        // Navigate back to main search page
-        router.push('/onboarding/ingredients-search');
-        break;
-      case 'history':
-        // Navigate to history section
-        console.log('Navigate to history section');
-        break;
-      case 'billing':
-        // Stay on billing page
-        break;
-    }
   };
 
   return (
@@ -474,70 +448,13 @@ export default function BillingScreen() {
             {/* Confirm & Pay Button */}
             <View style={[styles.bottomSection, { backgroundColor: theme.colors.background.primary }]}>
               <Button
-                title={`Confirm & Pay ${calculateFinalPrice()}`}
+                title={`Confirm & Pay $${calculateFinalPrice()}`}
                 onPress={handlePayment}
                 style={[styles.payButton, {
                   opacity: isFormValid ? 1 : 0.5
                 }]}
                 disabled={!isFormValid}
               />
-            </View>
-
-            {/* Footer with Same Icons as Search Page */}
-            <View style={[styles.bottomToolbar, { 
-              backgroundColor: theme.colors.background.secondary,
-              borderTopColor: theme.colors.border 
-            }]}>
-              <TouchableOpacity 
-                style={[styles.tabItem, {
-                  backgroundColor: activeTab === 'ai' ? theme.colors.accent.primary + '15' : 'transparent'
-                }]}
-                onPress={() => handleTabPress('ai')}
-              >
-                <View style={[styles.iconContainer, {
-                  backgroundColor: activeTab === 'ai' ? theme.colors.accent.primary : 'transparent'
-                }]}>
-                  <Image 
-                    source={icons.aiPowered}
-                    style={styles.tabIcon}
-                    resizeMode="contain"
-                  />
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={[styles.tabItem, {
-                  backgroundColor: activeTab === 'history' ? theme.colors.accent.primary + '15' : 'transparent'
-                }]}
-                onPress={() => handleTabPress('history')}
-              >
-                <View style={[styles.iconContainer, {
-                  backgroundColor: activeTab === 'history' ? theme.colors.accent.primary : 'transparent'
-                }]}>
-                  <Image 
-                    source={icons.history}
-                    style={styles.tabIcon1}
-                    resizeMode="contain"
-                  />
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={[styles.tabItem, {
-                  backgroundColor: activeTab === 'billing' ? theme.colors.accent.primary + '15' : 'transparent'
-                }]}
-                onPress={() => handleTabPress('billing')}
-              >
-                <View style={[styles.iconContainer, {
-                  backgroundColor: activeTab === 'billing' ? theme.colors.accent.primary : 'transparent'
-                }]}>
-                  <Image 
-                    source={icons.billing}
-                    style={styles.tabIcon}
-                    resizeMode="contain"
-                  />
-                </View>
-              </TouchableOpacity>
             </View>
           </View>
         </TouchableWithoutFeedback>
@@ -765,41 +682,11 @@ const styles = StyleSheet.create({
   },
   bottomSection: {
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 10,
+    paddingVertical: 20,
     borderTopWidth: 1,
     borderTopColor: '#E5E5E5',
   },
   payButton: {
     width: '100%',
   },
-  bottomToolbar: {
-    flexDirection: 'row',
-    borderTopWidth: 1,
-    paddingVertical: 8,
-    paddingBottom: 20,
-  },
-  tabItem: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-    borderRadius: 12,
-    marginHorizontal: 4,
-  },
-  iconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tabIcon: {
-    width: 20,
-    height: 20,
-  },
- tabIcon1: {
-    width: 30,
-    height: 30,
- }
 });

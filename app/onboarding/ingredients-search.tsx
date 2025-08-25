@@ -19,7 +19,7 @@ import {
 
 const { width, height } = Dimensions.get("window");
 
-// Import your custom icons (adjust paths as needed)
+// Import your custom icons from images folder
 const icons = {
   aiPowered: require("../../assets/images/ai-powered.png"),
   history: require("../../assets/images/ai-history.png"),
@@ -60,7 +60,7 @@ export default function IngredientsSearchScreen() {
     }
   };
 
-  const handleRemoveIngredient = (ingredientToRemove) => {
+  const handleRemoveIngredient = (ingredientToRemove: any) => {
     setIngredients(
       ingredients.filter((ingredient) => ingredient !== ingredientToRemove)
     );
@@ -83,13 +83,13 @@ export default function IngredientsSearchScreen() {
         console.log("Navigate to history section");
         break;
       case "billing":
-        // Navigate to billing
-        console.log("Navigate to billing section");
+        // Navigate to billing page
+        router.push("/main/(tabs)/billing");
         break;
     }
   };
 
-  const handleProfileMenuOption = (option) => {
+  const handleProfileMenuOption = (option: any) => {
     setShowProfileMenu(false);
     switch (option) {
       case "login":
@@ -114,7 +114,7 @@ export default function IngredientsSearchScreen() {
     }
   };
 
-  const handleCountrySelect = (country) => {
+  const handleCountrySelect = (country: any) => {
     setSelectedCountry(country);
     setShowCountrySelector(false);
   };
@@ -775,12 +775,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   tabIcon: {
-    width: 30,
-    height: 30,
+    width: 20,
+    height: 20,
   },
   tabIcon1: {
-    width: 40,
-    height: 40,
+    width: 30,
+    height: 30,
   },
   tabLabel: {
     fontSize: 12,
