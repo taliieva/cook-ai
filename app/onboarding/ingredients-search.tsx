@@ -37,6 +37,15 @@ const countries = [
   { name: "Thai", flag: "🇹🇭", code: "th" },
 ];
 
+// Modes data
+const modes = [
+  { name: "Standard", icon: "restaurant-outline", code: "standard", isPro: false },
+  { name: "Gym", icon: "fitness-outline", code: "gym", isPro: false },
+  { name: "Diet", icon: "leaf-outline", code: "diet", isPro: false },
+  { name: "Vegan", icon: "flower-outline", code: "vegan", isPro: true },
+  { name: "Vegetarian", icon: "nutrition-outline", code: "vegetarian", isPro: true },
+];
+
 export default function UnifiedMainScreen() {
   const theme = useTheme();
   
@@ -46,6 +55,7 @@ export default function UnifiedMainScreen() {
   // Shared state between components
   const [ingredients, setIngredients] = useState([]);
   const [selectedCountry, setSelectedCountry] = useState(countries[0]);
+  const [selectedMode, setSelectedMode] = useState(modes[0]); // Default to Standard mode
   const [userPlan, setUserPlan] = useState("free"); // 'free' or 'pro'
 
   // Handle tab switching
@@ -59,10 +69,13 @@ export default function UnifiedMainScreen() {
   };
 
   // Handle search again from history
-  const handleSearchAgain = (searchTerms, cuisine) => {
-    // Switch to AI tab and pre-fill ingredients
+  const handleSearchAgain = (searchTerms, cuisine, mode) => {
+    // Switch to AI tab and pre-fill ingredients, cuisine, and mode
     setIngredients(searchTerms);
     setSelectedCountry(countries.find(c => c.name === cuisine) || countries[0]);
+    if (mode) {
+      setSelectedMode(modes.find(m => m.name === mode) || modes[0]);
+    }
     setActiveTab('ai');
   };
 
@@ -76,6 +89,8 @@ export default function UnifiedMainScreen() {
             setIngredients={setIngredients}
             selectedCountry={selectedCountry}
             setSelectedCountry={setSelectedCountry}
+            selectedMode={selectedMode}
+            setSelectedMode={setSelectedMode}
             onUpgrade={handleUpgrade}
           />
         );
@@ -96,6 +111,8 @@ export default function UnifiedMainScreen() {
             setIngredients={setIngredients}
             selectedCountry={selectedCountry}
             setSelectedCountry={setSelectedCountry}
+            selectedMode={selectedMode}
+            setSelectedMode={setSelectedMode}
             onUpgrade={handleUpgrade}
           />
         );

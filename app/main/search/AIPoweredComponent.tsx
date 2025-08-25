@@ -4,14 +4,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-    Dimensions,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Dimensions,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 const { width, height } = Dimensions.get("window");
@@ -29,11 +29,22 @@ const countries = [
   { name: "Thai", flag: "🇹🇭", code: "th" },
 ];
 
+// Modes data with icons
+const modes = [
+  { name: "Standard", icon: "restaurant-outline", code: "standard", isPro: false },
+  { name: "Gym", icon: "fitness-outline", code: "gym", isPro: false },
+  { name: "Diet", icon: "leaf-outline", code: "diet", isPro: false },
+  { name: "Vegan", icon: "flower-outline", code: "vegan", isPro: true },
+  { name: "Vegetarian", icon: "nutrition-outline", code: "vegetarian", isPro: true },
+];
+
 export default function AIPoweredComponent({ 
   ingredients, 
   setIngredients, 
   selectedCountry, 
   setSelectedCountry,
+  selectedMode,
+  setSelectedMode,
   onUpgrade 
 } : any) {
   const router = useRouter();
@@ -41,6 +52,7 @@ export default function AIPoweredComponent({
   const [searchText, setSearchText] = useState("");
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showCountrySelector, setShowCountrySelector] = useState(false);
+  const [showModeSelector, setShowModeSelector] = useState(false);
   
   // Mock user state
   const [isLoggedIn, setIsLoggedIn] = useState(true);
@@ -60,7 +72,15 @@ export default function AIPoweredComponent({
   };
 
   const handleFindDishes = () => {
-    router.push("/main/dishes");
+    // Pass the selected mode and country to the dishes screen
+    router.push({
+      pathname: "/main/dishes",
+      params: {
+        country: selectedCountry.code,
+        mode: selectedMode.code,
+        ingredients: JSON.stringify(ingredients)
+      }
+    });
   };
 
   const handleProfileMenuOption = (option:any) => {
@@ -90,6 +110,17 @@ export default function AIPoweredComponent({
   const handleCountrySelect = (country: any) => {
     setSelectedCountry(country);
     setShowCountrySelector(false);
+  };
+
+  const handleModeSelect = (mode: any) => {
+    if (mode.isPro && userPlan === "free") {
+      // Show upgrade prompt for pro features
+      setShowModeSelector(false);
+      onUpgrade();
+      return;
+    }
+    setSelectedMode(mode);
+    setShowModeSelector(false);
   };
 
   const ProfileMenu = () => (
@@ -351,6 +382,119 @@ export default function AIPoweredComponent({
     </Modal>
   );
 
+  const ModeSelector = () => (
+    <Modal
+      visible={showModeSelector}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={() => setShowModeSelector(false)}
+    >
+      <TouchableOpacity
+        style={styles.modalOverlay}
+        activeOpacity={1}
+        onPress={() => setShowModeSelector(false)}
+      >
+        <View
+          style={[
+            styles.modeSelectorModal,
+            {
+              backgroundColor: theme.colors.background.secondary,
+              borderColor: theme.colors.border,
+            },
+          ]}
+        >
+          <View style={styles.modeSelectorHeader}>
+            <Text
+              style={[
+                styles.modeSelectorTitle,
+                { color: theme.colors.text.primary },
+              ]}
+            >
+              Select Mode
+            </Text>
+            <TouchableOpacity onPress={() => setShowModeSelector(false)}>
+              <Ionicons
+                name="close"
+                size={24}
+                color={theme.colors.text.primary}
+              />
+            </TouchableOpacity>
+          </View>
+          <ScrollView style={styles.modeList}>
+            {modes.map((mode, index) => {
+              const isDisabled = mode.isPro && userPlan === "free";
+              return (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.modeItem,
+                    {
+                      backgroundColor:
+                        selectedMode.code === mode.code
+                          ? theme.colors.accent.primary + "15"
+                          : "transparent",
+                      opacity: isDisabled ? 0.6 : 1,
+                    },
+                  ]}
+                  onPress={() => handleModeSelect(mode)}
+                >
+                  <Ionicons
+                    name={mode.icon as any}
+                    size={24}
+                    color={
+                      selectedMode.code === mode.code
+                        ? theme.colors.accent.primary
+                        : theme.colors.text.primary
+                    }
+                  />
+                  <View style={styles.modeContent}>
+                    <Text
+                      style={[
+                        styles.modeName,
+                        {
+                          color:
+                            selectedMode.code === mode.code
+                              ? theme.colors.accent.primary
+                              : theme.colors.text.primary,
+                        },
+                      ]}
+                    >
+                      {mode.name}
+                    </Text>
+                    {mode.isPro && (
+                      <View
+                        style={[
+                          styles.proBadge,
+                          { backgroundColor: theme.colors.accent.primary },
+                        ]}
+                      >
+                        <Text style={styles.proText}>PRO</Text>
+                      </View>
+                    )}
+                  </View>
+                  {selectedMode.code === mode.code && (
+                    <Ionicons
+                      name="checkmark"
+                      size={20}
+                      color={theme.colors.accent.primary}
+                    />
+                  )}
+                  {isDisabled && (
+                    <Ionicons
+                      name="lock-closed"
+                      size={16}
+                      color={theme.colors.text.secondary}
+                    />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
+
   return (
     <>
       {/* Profile Section */}
@@ -486,6 +630,56 @@ export default function AIPoweredComponent({
         </View>
       </ScrollView>
 
+      {/* Mode Selection */}
+      <View style={styles.modeSection}>
+        <Text
+          style={[styles.sectionTitle, { color: theme.colors.text.primary }]}
+        >
+          Mode
+        </Text>
+        <TouchableOpacity
+          style={[
+            styles.modeSelector,
+            {
+              backgroundColor: theme.colors.background.secondary,
+              borderColor: theme.colors.border,
+            },
+          ]}
+          onPress={() => setShowModeSelector(true)}
+        >
+          <View style={styles.selectedModeContent}>
+            <Ionicons
+              name={selectedMode.icon as any}
+              size={20}
+              color={theme.colors.text.primary}
+            />
+            <Text
+              style={[
+                styles.selectedModeText,
+                { color: theme.colors.text.primary },
+              ]}
+            >
+              {selectedMode.name}
+            </Text>
+            {selectedMode.isPro && (
+              <View
+                style={[
+                  styles.proBadgeSmall,
+                  { backgroundColor: theme.colors.accent.primary },
+                ]}
+              >
+                <Text style={styles.proTextSmall}>PRO</Text>
+              </View>
+            )}
+          </View>
+          <Ionicons
+            name="chevron-down"
+            size={20}
+            color={theme.colors.text.secondary}
+          />
+        </TouchableOpacity>
+      </View>
+
       {/* Find Dishes Button */}
       <View style={styles.buttonSection}>
         <Button
@@ -501,6 +695,7 @@ export default function AIPoweredComponent({
 
       <ProfileMenu />
       <CountrySelector />
+      <ModeSelector />
     </>
   );
 }
@@ -595,6 +790,39 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 15,
     opacity: 0.7,
+  },
+  modeSection: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+  },
+  modeSelector: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  selectedModeContent: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  selectedModeText: {
+    fontSize: 16,
+    fontWeight: "500",
+    marginLeft: 8,
+  },
+  proBadgeSmall: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginLeft: 8,
+  },
+  proTextSmall: {
+    color: "white",
+    fontSize: 10,
+    fontWeight: "600",
   },
   buttonSection: {
     paddingHorizontal: 20,
@@ -703,5 +931,57 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     marginLeft: 12,
     flex: 1,
+  },
+  modeSelectorModal: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderWidth: 1,
+    maxHeight: height * 0.4,
+  },
+  modeSelectorHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E5E5",
+  },
+  modeSelectorTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  modeList: {
+    flex: 1,
+  },
+  modeItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  modeContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    marginLeft: 12,
+  },
+  modeName: {
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  proBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+    marginLeft: 8,
+  },
+  proText: {
+    color: "white",
+    fontSize: 10,
+    fontWeight: "600",
   },
 });
