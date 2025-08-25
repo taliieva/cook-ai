@@ -314,7 +314,6 @@ const styles = StyleSheet.create({
   },
   dishesContent: {
     paddingHorizontal: 20,
-    paddingBottom: 100, // Add padding for footer
   },
   dishCard: {
     flexDirection: 'row',
