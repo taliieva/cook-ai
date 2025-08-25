@@ -5,17 +5,17 @@ import MaskedView from "@react-native-masked-view/masked-view";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import {
-    Dimensions,
-    ImageBackground,
-    Platform,
-    SafeAreaView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Dimensions,
+  ImageBackground,
+  Platform,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
 
 const { width, height } = Dimensions.get("window");
@@ -23,13 +23,18 @@ const { width, height } = Dimensions.get("window");
 export default function AIIntroScreen() {
   const router = useRouter();
   const theme = useTheme();
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const handleBack = () => {
     router.back();
   };
 
-  const handleTryForFree = () => {
+  const handleClaimOffer = () => {
     router.push("/onboarding/suprise"); // Navigate to surprise screen
+  };
+
+  const handleExpandPricing = () => {
+    setIsExpanded(!isExpanded);
   };
 
   return (
@@ -101,21 +106,60 @@ export default function AIIntroScreen() {
             {/* Content Container */}
             <View style={styles.bottomContent}>
               <View style={styles.buttonContainer}>
+                {/* Combined Pricing Container */}
+                <TouchableOpacity 
+                  style={styles.combinedPricingContainer}
+                  onPress={handleExpandPricing}
+                  activeOpacity={0.9}
+                >
+                  {/* Save 50% Section */}
+                  <View style={styles.saveSection}>
+                    <Text style={styles.saveText}>Save 50%</Text>
+                  </View>
+
+                  {/* Pricing Section with Blur */}
+                  <View style={styles.pricingSection}>
+                    <BlurView intensity={20} tint="light" style={styles.pricingBlur}>
+                      <View style={styles.pricingContent}>
+                        {!isExpanded ? (
+                          // Collapsed state - Show only Annual
+                          <View style={styles.pricingOption}>
+                            <Text style={styles.pricingTitle}>Annual US$2.92/mo</Text>
+                            <Text style={styles.pricingSubtext}>12 mo - US$34.99</Text>
+                          </View>
+                        ) : (
+                          // Expanded state - Show both options
+                          <>
+                            {/* Annual Pricing - Top */}
+                            <View style={styles.pricingOption}>
+                              <Text style={styles.pricingTitle}>Annual US$2.92/mo</Text>
+                              <Text style={styles.pricingSubtext}>12 mo - US$34.99</Text>
+                            </View>
+
+                            {/* Divider */}
+                            <View style={styles.divider} />
+
+                            {/* Monthly Pricing - Bottom */}
+                            <View style={styles.pricingOption}>
+                              <Text style={styles.pricingTitle}>Monthly US$17.99/mo</Text>
+                            </View>
+                          </>
+                        )}
+                      </View>
+                    </BlurView>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Claim Offer Button */}
                 <Button
-                  title="Try for Free"
-                  onPress={handleTryForFree}
-                  style={styles.tryFreeButton}
+                  title="Claim your offer now"
+                  onPress={handleClaimOffer}
+                  style={styles.claimButton}
                 />
 
-                {/* Subscription Details */}
-                <Text
-                  style={[
-                    styles.subscriptionText,
-                    theme.typography.body.medium,
-                    { color: "#FFFFFF" },
-                  ]}
-                >
-                  Yearly $80 / Monthly $20
+                {/* Guarantee Text */}
+                <Text style={styles.guaranteeText}>
+                  Cancel anytime - Money back guarantee
                 </Text>
               </View>
             </View>
@@ -195,6 +239,7 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   bottomContent: {
+   
     position: "absolute",
     bottom: 0,
     left: 0,
@@ -202,19 +247,75 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   buttonContainer: {
+    height:'40%',
     paddingHorizontal: 30,
     alignItems: "center",
   },
-  tryFreeButton: {
+  combinedPricingContainer: {
+    width: '98%',
+    marginBottom: 20,
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  saveSection: {
+    backgroundColor: 'rgba(59, 130, 246, 0.9)', // Blue tone
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  saveText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  pricingSection: {
+    overflow: 'hidden',
+  },
+  pricingBlur: {
+    flex: 1,
+  },
+  pricingContent: {
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+  },
+  pricingOption: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  pricingTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  pricingSubtext: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 14,
+    fontWeight: '400',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    marginVertical: 6,
+    marginHorizontal: 20,
+  },
+  claimButton: {
     width: "100%",
     marginBottom: 15,
   },
-  subscriptionText: {
-    textAlign: "center",
-    fontSize: 16,
-    fontWeight: "500",
+  guaranteeText: {
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontSize: 14,
+    fontWeight: '400',
+    textAlign: 'center',
     opacity: 0.9,
-    textShadowColor: "rgba(0, 0, 0, 0.5)",
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },

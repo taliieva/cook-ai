@@ -36,7 +36,7 @@ export default function IngredientsSearchScreen() {
   };
 
   const handleFindDishes = () => {
-    router.push('/dishes' as any);
+    router.push('/main/dishes');
   };
 
   const handleTabPress = (tab: string) => {

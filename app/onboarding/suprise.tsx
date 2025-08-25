@@ -1,401 +1,427 @@
 import { Button } from "@/components/ui/Button";
 import { useTheme } from "@/hooks/useTheme";
 import { useRouter } from "expo-router";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-    Animated,
-    Dimensions,
-    Easing,
-    Platform,
-    SafeAreaView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    View,
+  Animated,
+  Dimensions,
+  Easing,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View
 } from "react-native";
-import Svg, {
-    Circle,
-    Defs,
-    LinearGradient,
-    Path,
-    Stop,
-    Text as SvgText,
-} from "react-native-svg";
+
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
-const WHEEL_SIZE = Math.min(SCREEN_W, SCREEN_H) * 0.68; // responsive
-const RADIUS = WHEEL_SIZE / 2;
-const CENTER = RADIUS;
-const SLICE_COUNT = 8;
-const SLICE_ANGLE = 360 / SLICE_COUNT;
-// Original sections, but we’ll style via theme (blue-tech)
-const sections = [
-  { percentage: "10%" },
-  { percentage: "20%" },
-  { percentage: "5%" },
-  { percentage: "50%" }, // winner
-  { percentage: "15%" },
-  { percentage: "30%" },
-  { percentage: "25%" },
-  { percentage: "35%" },
-];
-// helper: polar -> cartesian
-const polarToCartesian = (
-  cx: number,
-  cy: number,
-  r: number,
-  angleDeg: number
-) => {
-  const angleRad = (Math.PI / 180) * angleDeg;
-  return {
-    x: cx + r * Math.cos(angleRad),
-    y: cy + r * Math.sin(angleRad),
-  };
+
+// Floating particle component
+const FloatingParticle = ({ index, accent }: any) => {
+  const particleAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.5)).current;
+
+  useEffect(() => {
+    const startDelay = index * 100;
+    
+    // Float animation
+    const floatAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(particleAnim, {
+          toValue: 1,
+          duration: 3000 + (index * 200),
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(particleAnim, {
+          toValue: 0,
+          duration: 3000 + (index * 200),
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    // Scale animation
+    const scaleAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 2000 + (index * 150),
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 0.3,
+          duration: 2000 + (index * 150),
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    setTimeout(() => {
+      floatAnimation.start();
+      scaleAnimation.start();
+    }, startDelay);
+
+    return () => {
+      floatAnimation.stop();
+      scaleAnimation.stop();
+    };
+  }, [particleAnim, scaleAnim, index]);
+
+  const translateY = particleAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -50],
+  });
+
+  const translateX = particleAnim.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [0, 30 * Math.cos(index), -20 * Math.sin(index)],
+  });
+
+  const colors = [accent, '#FFD60A', '#FF6B6B', '#32D74B', '#FF9500'];
+  const particleColor = colors[index % colors.length];
+
+  return (
+    <Animated.View
+      style={[
+        styles.particle,
+        {
+          backgroundColor: particleColor,
+          transform: [
+            { translateX },
+            { translateY },
+            { scale: scaleAnim },
+          ],
+          left: (index % 3) * (SCREEN_W / 3) + Math.random() * 50,
+          top: 100 + (index * 40) + Math.random() * 100,
+        }
+      ]}
+    />
+  );
 };
-// path arc for slice
-const createSlicePath = (
-  startAngle: number,
-  endAngle: number,
-  radius: number
-) => {
-  const largeArc = endAngle - startAngle > 180 ? 1 : 0;
-  const start = polarToCartesian(CENTER, CENTER, radius, startAngle);
-  const end = polarToCartesian(CENTER, CENTER, radius, endAngle);
-  return `M ${CENTER} ${CENTER} L ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArc} 1 ${end.x} ${end.y} Z`;
-};
-export default function SurpriseScreen() {
+
+export default function SupriseScreen() {
   const router = useRouter();
   const theme = useTheme();
-  const spinValue = useRef(new Animated.Value(0)).current;
-  const [isSpinning, setIsSpinning] = useState(true);
-  const [showResult, setShowResult] = useState(false);
-  // Colors from your theme (no edits to color ts)
+  const [timeLeft, setTimeLeft] = useState(5 * 60); // 5 minutes in seconds
+  
+  // Animation refs
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.5)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const glowAnim = useRef(new Animated.Value(0)).current;
+
+  // Colors from theme
   const bgPrimary = theme.colors.background.primary;
-  const textPrimary = theme.isDark
-    ? theme.colors.text.secondary
-    : theme.colors.text.primary;
+  const textPrimary = theme.colors.text.primary;
   const accent = theme.colors.accent.primary;
-  const gradientStart =
-    theme.colors.accent.gradientStart || theme.colors.accent.primary;
-  const gradientEnd =
-    theme.colors.accent.gradientEnd || theme.colors.accent.primary;
-  const borderColor = theme.colors.border;
-  // Build blue-tech palette for slices using your brand blues (fallbacks to accent)
-  //   const sliceFills = useMemo(() => {
-  //     const brand = [
-  //       theme.colors.base?.blue900 || accent,
-  //       theme.colors.base?.blue800 || accent,
-  //       theme.colors.base?.blue700 || accent,
-  //       theme.colors.base?.blue600 || accent,
-  //       theme.colors.base?.blue500 || accent,
-  //       theme.colors.base?.blue400 || accent,
-  //       theme.colors.base?.blue300 || accent,
-  //       theme.colors.base?.blue200 || accent,
-  //     ];
-  //     return brand.slice(0, SLICE_COUNT);
-  //   }, [theme, accent]);
-  // Precompute labels and paths for performance
-  const slices = useMemo(() => {
-    return sections.map((s, index) => {
-      const startAngle = index * SLICE_ANGLE - SLICE_ANGLE / 2;
-      const endAngle = startAngle + SLICE_ANGLE;
-      const middleAngle = startAngle + SLICE_ANGLE / 2;
-      const path = createSlicePath(startAngle, endAngle, RADIUS * 0.86);
-      const labelPoint = polarToCartesian(
-        CENTER,
-        CENTER,
-        RADIUS * 0.62,
-        middleAngle
-      );
-      return {
-        ...s,
-        index,
-        startAngle,
-        endAngle,
-        middleAngle,
-        path,
-        labelX: labelPoint.x,
-        labelY: labelPoint.y,
-      };
-    });
-  }, []);
-  // Smooth spin with easing + tiny settle overshoot
+
+  // Entrance animations
   useEffect(() => {
-    // Land on slice index 3 (0-based) which is "50%"
-    const targetSliceIndex = 3;
-    const landingAngle = targetSliceIndex * SLICE_ANGLE; // where pointer at 12 o’clock meets this slice center
-    // Do multiple full rotations + align to landingAngle (pointer is fixed at top)
-    const rotations = 5; // more spins = smoother feel
-    const targetAngle = rotations * 360 + landingAngle;
-    Animated.sequence([
-      Animated.timing(spinValue, {
-        toValue: targetAngle,
-        duration: 3400,
-        easing: Easing.bezier(0.17, 0.84, 0.44, 1), // smooth-out cubic bezier
-        useNativeDriver: true,
-      }),
-      // tiny settle for a premium feel (1–2 deg)
-      Animated.timing(spinValue, {
-        toValue: targetAngle + 2.5,
-        duration: 180,
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1000,
         easing: Easing.out(Easing.quad),
         useNativeDriver: true,
       }),
-      Animated.timing(spinValue, {
-        toValue: targetAngle,
-        duration: 160,
-        easing: Easing.inOut(Easing.quad),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 50,
+        friction: 8,
         useNativeDriver: true,
       }),
-    ]).start(() => {
-      setIsSpinning(false);
-      setTimeout(() => setShowResult(true), 450);
-    });
+    ]).start();
+
+    // Continuous glow animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnim, {
+          toValue: 1,
+          duration: 2000,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: false,
+        }),
+        Animated.timing(glowAnim, {
+          toValue: 0,
+          duration: 2000,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: false,
+        }),
+      ])
+    ).start();
+
+    // Pulse animation for discount text
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.1,
+          duration: 1500,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1500,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [fadeAnim, scaleAnim, glowAnim, pulseAnim]);
+
+  // Timer countdown
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
   }, []);
-  const spin = spinValue.interpolate({
-    inputRange: [0, 360],
-    outputRange: ["0deg", "360deg"],
-  });
-  const shadow = Platform.select({
-    ios: {
-      shadowColor: "#000",
-      shadowOpacity: 0.25,
-      shadowRadius: 18,
-      shadowOffset: { width: 0, height: 10 },
-    },
-    android: {
-      elevation: 14,
-    },
-  });
-  const handleContinue = () => {
-    router.push("/onboarding/ingredients-search" as any);
+
+  // Format timer
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
+
+  const glowOpacity = glowAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.3, 0.8],
+  });
+
+  const handleContinue = useCallback(() => {
+    router.push("/onboarding/ingredients-search");
+  }, [router]);
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgPrimary }]}>
       <StatusBar
         barStyle={theme.isDark ? "light-content" : "dark-content"}
         backgroundColor={bgPrimary}
       />
-      <View style={styles.topSection}>
-        <Text
-          style={[styles.title, { color: textPrimary }]}
-          accessibilityRole="header"
-        >
-          Spin to win your credit!
-        </Text>
+
+      {/* Floating Particles */}
+      <View style={styles.particlesContainer}>
+        {Array.from({ length: 15 }, (_, i) => (
+          <FloatingParticle key={i} index={i} accent={accent} />
+        ))}
       </View>
-      <View style={styles.centerSection}>
-        <View
+
+      {/* Header */}
+      <View style={styles.topSection}>
+        <Animated.Text 
           style={[
-            styles.wheelWrapper,
-            { width: WHEEL_SIZE, height: WHEEL_SIZE },
+            styles.congratsText, 
+            { color: textPrimary, opacity: fadeAnim }
           ]}
         >
-          {/* pointer (fixed at top center) */}
-          <View style={[styles.pointer, { top: -8 }]}>
-            <View style={[styles.pointerStem, { backgroundColor: accent }]} />
-            <View
-              style={[styles.pointerTriangle, { borderTopColor: accent }]}
-            />
-          </View>
-          {/* wheel */}
-          <Animated.View
+          🎉 Congratulations! 🎉
+        </Animated.Text>
+      </View>
+
+      {/* Main Discount Section */}
+      <View style={styles.centerSection}>
+        <Animated.View 
+          style={[
+            styles.discountContainer,
+            {
+              transform: [{ scale: scaleAnim }],
+              opacity: fadeAnim,
+            }
+          ]}
+        >
+          {/* Glow Effect */}
+          <Animated.View 
             style={[
-              { transform: [{ rotate: spin }] },
-              styles.wheelShadow,
-              shadow,
-            ]}
-            accessibilityLabel={isSpinning ? "Spinning" : "Stopped"}
-            accessibilityState={{ busy: isSpinning }}
-          >
-            <Svg
-              width={WHEEL_SIZE}
-              height={WHEEL_SIZE}
-              viewBox={`0 0 ${WHEEL_SIZE} ${WHEEL_SIZE}`}
-            >
-              <Defs>
-                {Array.from({ length: SLICE_COUNT }).map((_, i) => (
-                  <LinearGradient
-                    key={`slice-grad-${i}`}
-                    id={`slice-grad-${i}`}
-                    x1="0%"
-                    y1="0%"
-                    x2="100%"
-                    y2="100%"
-                  >
-                    <Stop
-                      offset="0%"
-                      stopColor={gradientStart}
-                      stopOpacity={0.8 - i * 0.03}
-                    />
-                    <Stop
-                      offset="100%"
-                      stopColor={gradientEnd}
-                      stopOpacity={1}
-                    />
-                  </LinearGradient>
-                ))}
-              </Defs>
-              {/* outer ring */}
-              <Circle
-                cx={CENTER}
-                cy={CENTER}
-                r={RADIUS * 0.92}
-                stroke="url(#ring)"
-                strokeWidth={RADIUS * 0.08}
-                fill="none"
-              />
-              {/* slices */}
-              {slices.map((s, idx) => (
-                <Path
-                  key={`slice-${idx}`}
-                  d={s.path}
-                  fill={`url(#slice-grad-${idx})`}
-                  stroke="url(#divider)" // keep your divider if you had it
-                  strokeWidth={1.5}
-                />
-              ))}
-              {/* labels */}
-              {slices.map((s, idx) => (
-                <SvgText
-                  key={`label-${idx}`}
-                  x={s.labelX}
-                  y={s.labelY}
-                  fontSize={RADIUS * 0.16}
-                  fontWeight="700"
-                  fill="#FFFFFF"
-                  textAnchor="middle"
-                  alignmentBaseline="middle"
-                >
-                  {s.percentage}
-                </SvgText>
-              ))}
-            </Svg>
-          </Animated.View>
-          {/* center button (solid accent, subtle border) */}
-          <View
-            style={[
-              styles.centerButton,
+              styles.glowEffect,
               {
-                width: RADIUS * 0.46,
-                height: RADIUS * 0.46,
-                borderRadius: (RADIUS * 0.46) / 2,
-                backgroundColor: accent,
-                borderColor,
-              },
+                opacity: glowOpacity,
+                backgroundColor: accent + '20',
+              }
             ]}
-            pointerEvents="none"
-          >
-            <Text style={styles.centerText}>SPIN</Text>
-          </View>
-        </View>
-        {showResult && (
-          <View
+          />
+          
+          {/* Main Discount Text */}
+          <Animated.View 
             style={[
-              styles.resultCard,
-              { borderColor, backgroundColor: "transparent" },
+              styles.discountTextContainer,
+              { transform: [{ scale: pulseAnim }] }
             ]}
           >
-            <View
-              style={[
-                styles.resultPill,
-                {
-                  backgroundColor: `${accent}1A` /* ~10% alpha if your color parser supports */,
-                },
-              ]}
-            >
-              <Text style={[styles.resultText, { color: accent }]}>
-                :tada: You won 50% credit! :tada:
-              </Text>
-            </View>
+            <Text style={[styles.discountPercent, { color: accent }]}>50%</Text>
+            <Text style={[styles.discountText, { color: textPrimary }]}>DISCOUNT</Text>
+          </Animated.View>
+
+          {/* Subtitle */}
+          <Text style={[styles.subtitle, { color: textPrimary + '80' }]}>
+            Exclusive offer just for you!
+          </Text>
+        </Animated.View>
+
+        {/* Timer Section */}
+        <Animated.View 
+          style={[
+            styles.timerContainer,
+            { opacity: fadeAnim }
+          ]}
+        >
+          <Text style={[styles.timerLabel, { color: textPrimary + '60' }]}>
+            Offer expires in
+          </Text>
+          <View style={[styles.timerBox, { backgroundColor: accent + '15', borderColor: accent + '30' }]}>
+            <Text style={[styles.timerText, { color: accent }]}>
+              {formatTime(timeLeft)}
+            </Text>
           </View>
-        )}
+          <Text style={[styles.timerSubtext, { color: textPrimary + '60' }]}>
+            Don't miss out on this limited-time offer!
+          </Text>
+        </Animated.View>
       </View>
-      <View style={styles.bottomSection}>
+
+      {/* Bottom Section */}
+      <Animated.View 
+        style={[
+          styles.bottomSection,
+          { opacity: fadeAnim }
+        ]}
+      >
         <Button
-          title="Continue"
+          title="Claim My Discount"
           onPress={handleContinue}
-          style={{ width: "100%", opacity: showResult ? 1 : 0.6 }}
-          disabled={!showResult}
+          style={styles.claimButton}
         />
-      </View>
+        <Text style={[styles.termsText, { color: textPrimary + '60' }]}>
+          Terms and conditions apply
+        </Text>
+      </Animated.View>
     </SafeAreaView>
   );
 }
+
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  topSection: { paddingTop: 48, paddingHorizontal: 24, alignItems: "center" },
-  title: {
-    fontSize: 28,
-    fontWeight: "800",
+  container: { 
+    flex: 1 
+  },
+  particlesContainer: {
+    position: 'absolute',
+    width: SCREEN_W,
+    height: SCREEN_H,
+    zIndex: 1,
+  },
+  particle: {
+    position: 'absolute',
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    opacity: 0.7,
+  },
+  topSection: {
+    paddingTop: 60,
+    paddingHorizontal: 30,
+    alignItems: "center",
+    marginBottom: 40,
+    zIndex: 2,
+  },
+  congratsText: {
+    fontSize: 24,
+    fontWeight: "600",
     textAlign: "center",
-    letterSpacing: 0.5,
   },
   centerSection: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: 30,
+    zIndex: 2,
+  },
+  discountContainer: {
+    alignItems: 'center',
+    marginBottom: 60,
+    position: 'relative',
+  },
+  glowEffect: {
+    position: 'absolute',
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    top: -50,
+    left: -50,
+  },
+  discountTextContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+    zIndex: 3,
+  },
+  discountPercent: {
+    fontSize: 88,
+    fontWeight: '900',
+    letterSpacing: -2,
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 0, height: 4 },
+    textShadowRadius: 8,
+  },
+  discountText: {
+    fontSize: 32,
+    fontWeight: '700',
+    letterSpacing: 4,
+    marginTop: -10,
+  },
+  subtitle: {
+    fontSize: 18,
+    fontWeight: '500',
+    textAlign: 'center',
+    marginTop: 10,
+  },
+  timerContainer: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  timerLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 12,
+  },
+  timerBox: {
     paddingHorizontal: 24,
-  },
-  wheelWrapper: {
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 28,
-  },
-  wheelShadow: {
-    width: WHEEL_SIZE,
-    height: WHEEL_SIZE,
-    borderRadius: RADIUS,
-    overflow: "visible",
-  },
-  pointer: {
-    position: "absolute",
-    zIndex: 20,
-    alignItems: "center",
-    justifyContent: "flex-start",
-  },
-  pointerStem: {
-    width: 4,
-    height: 14,
-    borderRadius: 2,
-    marginBottom: 2,
-    opacity: 0.95,
-  },
-  pointerTriangle: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 8,
-    borderRightWidth: 8,
-    borderTopWidth: 12,
-    borderLeftColor: "transparent",
-    borderRightColor: "transparent",
-  },
-  centerButton: {
-    position: "absolute",
-    zIndex: 25,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  centerText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 1.2,
-  },
-  resultCard: {
-    width: "100%",
-    alignItems: "center",
-    paddingHorizontal: 16,
-  },
-  resultPill: {
-    paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    marginBottom: 8,
   },
-  resultText: {
-    fontSize: 20,
-    fontWeight: "800",
-    textAlign: "center",
+  timerText: {
+    fontSize: 28,
+    fontWeight: '700',
+    letterSpacing: 2,
   },
-  bottomSection: { paddingHorizontal: 24, paddingBottom: 36 },
+  timerSubtext: {
+    fontSize: 14,
+    fontWeight: '400',
+    textAlign: 'center',
+  },
+  bottomSection: { 
+    paddingHorizontal: 30, 
+    paddingBottom: 40,
+    alignItems: 'center',
+    zIndex: 2,
+  },
+  claimButton: {
+    width: "100%",
+    marginBottom: 12,
+  },
+  termsText: {
+    fontSize: 12,
+    fontWeight: '400',
+    textAlign: 'center',
+  },
 });
