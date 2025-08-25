@@ -751,6 +751,7 @@ const styles = StyleSheet.create({
   ingredientsSection: {
     flex: 1,
     paddingHorizontal: 20,
+    paddingBottom: 30, // Add padding to account for footer height
   },
   sectionTitle: {
     fontSize: 18,
@@ -827,7 +828,7 @@ const styles = StyleSheet.create({
   buttonSection: {
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 10,
+    paddingBottom: 50, // Increased from 10 to provide more space above footer
   },
   findButton: {
     width: "100%",

@@ -19,9 +19,9 @@ const { width, height } = Dimensions.get("window");
 
 // Import your custom icons
 const icons = {
-  aiPowered: require("../../assets/images/ai-powered.png"),
-  history: require("../../assets/images/ai-history.png"),
-  billing: require("../../assets/images/ai-billing.png"),
+  aiPowered: require("../../assets/images/ai.png"),
+  history: require("../../assets/images/archive.png"),
+  billing: require("../../assets/images/price.png"),
 };
 
 // Mock countries data
@@ -152,29 +152,22 @@ export default function UnifiedMainScreen() {
             {
               backgroundColor:
                 activeTab === "ai"
-                  ? theme.colors.accent.primary + "15"
+                  ? theme.colors.accent.primary
                   : "transparent",
             },
           ]}
           onPress={() => handleTabPress("ai")}
         >
-          <View
+          <Image
+            source={icons.aiPowered}
             style={[
-              styles.iconContainer,
+              styles.tabIcon,
               {
-                backgroundColor:
-                  activeTab === "ai"
-                    ? theme.colors.accent.primary
-                    : "transparent",
+                tintColor: activeTab === "ai" ? "white" : theme.colors.text.secondary,
               },
             ]}
-          >
-            <Image
-              source={icons.aiPowered}
-              style={styles.tabIcon}
-              resizeMode="contain"
-            />
-          </View>
+            resizeMode="contain"
+          />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -183,29 +176,22 @@ export default function UnifiedMainScreen() {
             {
               backgroundColor:
                 activeTab === "history"
-                  ? theme.colors.accent.primary + "15"
+                  ? theme.colors.accent.primary
                   : "transparent",
             },
           ]}
           onPress={() => handleTabPress("history")}
         >
-          <View
+          <Image
+            source={icons.history}
             style={[
-              styles.iconContainer,
+              styles.tabIcon,
               {
-                backgroundColor:
-                  activeTab === "history"
-                    ? theme.colors.accent.primary
-                    : "transparent",
+                tintColor: activeTab === "history" ? "white" : theme.colors.text.secondary,
               },
             ]}
-          >
-            <Image
-              source={icons.history}
-              style={styles.tabIcon1}
-              resizeMode="contain"
-            />
-          </View>
+            resizeMode="contain"
+          />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -214,29 +200,22 @@ export default function UnifiedMainScreen() {
             {
               backgroundColor:
                 activeTab === "billing"
-                  ? theme.colors.accent.primary + "15"
+                  ? theme.colors.accent.primary
                   : "transparent",
             },
           ]}
           onPress={() => handleTabPress("billing")}
         >
-          <View
+          <Image
+            source={icons.billing}
             style={[
-              styles.iconContainer,
+              styles.tabIcon,
               {
-                backgroundColor:
-                  activeTab === "billing"
-                    ? theme.colors.accent.primary
-                    : "transparent",
+                tintColor: activeTab === "billing" ? "white" : theme.colors.text.secondary,
               },
             ]}
-          >
-            <Image
-              source={icons.billing}
-              style={styles.tabIcon}
-              resizeMode="contain"
-            />
-          </View>
+            resizeMode="contain"
+          />
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -251,32 +230,27 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   bottomToolbar: {
+    height: '10%',
+    position: 'absolute',  // Position absolutely
+    bottom: 0,             // Stick to bottom with no gap
+    left: 0,
+    right: 0,
     flexDirection: "row",
     borderTopWidth: 1,
     paddingVertical: 8,
-    paddingBottom: 20,
+    paddingBottom: 8,      // Reduced from 20 to remove extra gap
+    backgroundColor: 'transparent', // Will be overridden by theme
   },
   tabItem: {
     flex: 1,
     alignItems: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
     borderRadius: 12,
     marginHorizontal: 4,
   },
-  iconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   tabIcon: {
-    width: 30,
-    height: 30,
-  },
-  tabIcon1: {
-    width: 40,
-    height: 40,
+    width: 24,
+    height: 24,
   },
 });

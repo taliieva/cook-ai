@@ -311,6 +311,7 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
     paddingHorizontal: 20,
+    paddingBottom: 30, // Add padding to account for footer height
   },
   statsContainer: {
     flexDirection: 'row',
@@ -334,7 +335,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   historyList: {
-    paddingBottom: 20,
+    paddingBottom: 50, // Increased from 20 to provide more space above footer
   },
   historyItem: {
     borderRadius: 12,
