@@ -1,4 +1,5 @@
 import { useTheme } from "@/hooks/useTheme";
+import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
   Dimensions,
@@ -13,6 +14,7 @@ import {
 // Import separate components
 import BillingComponent from '../main/billing/BillingComponent';
 import HistoryComponent from '../main/history/HistoryComponent';
+import LikedComponent from '../main/liked/LikedComponent'; // Add LikedComponent
 import AIPoweredComponent from '../main/search/AIPoweredComponent';
 
 const { width, height } = Dimensions.get("window");
@@ -21,6 +23,7 @@ const { width, height } = Dimensions.get("window");
 const icons = {
   aiPowered: require("../../assets/images/ai.png"),
   history: require("../../assets/images/archive.png"),
+  liked: require("../../assets/images/heart.png"), // Add heart icon for liked section
   billing: require("../../assets/images/price.png"),
 };
 
@@ -102,6 +105,13 @@ export default function UnifiedMainScreen() {
             onUpgrade={handleUpgrade}
           />
         );
+      case "liked":
+        return (
+          <LikedComponent 
+            userPlan={userPlan}
+            onUpgrade={handleUpgrade}
+          />
+        );
       case "billing":
         return <BillingComponent />;
       default:
@@ -136,89 +146,109 @@ export default function UnifiedMainScreen() {
         {renderCurrentSection()}
       </View>
 
-      {/* Footer with Custom Icons - Always Visible */}
-      <View
-        style={[
-          styles.bottomToolbar,
-          {
-            backgroundColor: theme.colors.background.secondary,
-            borderTopColor: theme.colors.border,
-          },
-        ]}
-      >
-        {/* Content wrapper for proper centering within full-width background */}
-        <View style={styles.tabsContainer}>
-          <TouchableOpacity
-            style={[
-              styles.tabItem,
-              {
-                backgroundColor:
-                  activeTab === "ai"
-                    ? theme.colors.accent.primary
-                    : "transparent",
-              },
-            ]}
-            onPress={() => handleTabPress("ai")}
-          >
-            <Image
-              source={icons.aiPowered}
-              style={[
-                styles.tabIcon,
-                {
-                  tintColor: activeTab === "ai" ? "white" : theme.colors.text.secondary,
-                },
-              ]}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
+      {/* Footer with Smooth Background Effect */}
+      <View style={styles.footerContainer}>
+        {/* Gradient fade effect */}
+        <LinearGradient
+          colors={[
+            'transparent',
+            theme.isDark 
+              ? 'rgba(255, 255, 255, 0.02)' 
+              : 'rgba(0, 0, 0, 0.02)',
+            theme.isDark 
+              ? 'rgba(255, 255, 255, 0.05)' 
+              : 'rgba(0, 0, 0, 0.05)',
+            theme.isDark 
+              ? 'rgba(255, 255, 255, 0.08)' 
+              : 'rgba(0, 0, 0, 0.08)',
+            theme.isDark 
+              ? 'rgba(255, 255, 255, 0.12)' 
+              : 'rgba(0, 0, 0, 0.12)',
+          ]}
+          style={styles.gradientOverlay}
+          locations={[0, 0.3, 0.6, 0.8, 1]}
+        />
 
-          <TouchableOpacity
-            style={[
-              styles.tabItem,
-              {
-                backgroundColor:
-                  activeTab === "history"
-                    ? theme.colors.accent.primary
-                    : "transparent",
-              },
-            ]}
-            onPress={() => handleTabPress("history")}
-          >
-            <Image
-              source={icons.history}
-              style={[
-                styles.tabIcon,
-                {
-                  tintColor: activeTab === "history" ? "white" : theme.colors.text.secondary,
-                },
-              ]}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
+        {/* Removed blur background */}
 
-          <TouchableOpacity
-            style={[
-              styles.tabItem,
-              {
-                backgroundColor:
-                  activeTab === "billing"
-                    ? theme.colors.accent.primary
-                    : "transparent",
-              },
-            ]}
-            onPress={() => handleTabPress("billing")}
-          >
-            <Image
-              source={icons.billing}
-              style={[
-                styles.tabIcon,
-                {
-                  tintColor: activeTab === "billing" ? "white" : theme.colors.text.secondary,
-                },
-              ]}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
+        {/* Main footer content */}
+        <View style={styles.bottomToolbar}>
+          {/* Subtle top border */}
+          <View style={[
+            styles.topBorder,
+            { backgroundColor: theme.isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }
+          ]} />
+          
+          {/* Content wrapper for proper centering within full-width background */}
+          <View style={styles.tabsContainer}>
+            <TouchableOpacity
+              style={styles.tabItem}
+              onPress={() => handleTabPress("ai")}
+              activeOpacity={0.7}
+            >
+              <Image
+                source={icons.aiPowered}
+                style={[
+                  styles.tabIcon,
+                  {
+                    tintColor: activeTab === "ai" ? "#007AFF" : theme.colors.text.secondary,
+                  },
+                ]}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.tabItem}
+              onPress={() => handleTabPress("history")}
+              activeOpacity={0.7}
+            >
+              <Image
+                source={icons.history}
+                style={[
+                  styles.tabIcon,
+                  {
+                    tintColor: activeTab === "history" ? "#007AFF" : theme.colors.text.secondary,
+                  },
+                ]}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.tabItem}
+              onPress={() => handleTabPress("liked")}
+              activeOpacity={0.7}
+            >
+              <Image
+                source={icons.liked}
+                style={[
+                  styles.tabIcon,
+                  {
+                    tintColor: activeTab === "liked" ? "#007AFF" : theme.colors.text.secondary,
+                  },
+                ]}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.tabItem}
+              onPress={() => handleTabPress("billing")}
+              activeOpacity={0.7}
+            >
+              <Image
+                source={icons.billing}
+                style={[
+                  styles.tabIcon,
+                  {
+                    tintColor: activeTab === "billing" ? "#007AFF" : theme.colors.text.secondary,
+                  },
+                ]}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </SafeAreaView>
@@ -231,40 +261,63 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    marginBottom: '12%', 
+    paddingBottom: 20, // Add some space before footer
   },
-  bottomToolbar: {
-    minHeight: '15%', 
+  footerContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    borderTopWidth: 1,
-    paddingTop: 0, 
-    paddingBottom: 12, 
-    paddingHorizontal: 0, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
+    height: 120, // Increased height for gradient effect
+  },
+  gradientOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  blurBackground: {
+    // Removed blur background styles
+  },
+  bottomToolbar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingTop: 8,
+    paddingBottom: 20,
+    paddingHorizontal: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  topBorder: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 1,
   },
   tabsContainer: {
     flexDirection: "row",
     alignItems: 'center',
     justifyContent: 'space-around',
     width: '100%',
-    paddingHorizontal: 16, 
+    paddingHorizontal: 24,
   },
   tabItem: {
     flex: 1,
     alignItems: "center",
     justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderRadius: 12,
-    marginHorizontal: 4,
-    minHeight: 48, 
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    marginHorizontal: 6,
+    minHeight: 52,
+    // Removed background color and shadow properties
   },
   tabIcon: {
-    width: 24,
-    height: 24,
+    width: 26,
+    height: 26,
   },
 });

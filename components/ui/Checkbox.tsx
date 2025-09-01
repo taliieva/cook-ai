@@ -20,52 +20,46 @@ export const Checkbox: React.FC<CheckboxProps> = ({
   const theme = useTheme();
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity style={styles.checkboxContainer} onPress={onPress}>
-        <View style={[
-          styles.checkbox, 
-          { borderColor: checked ? theme.colors.accent.primary : theme.colors.border },
-          checked && { backgroundColor: theme.colors.accent.primary }
-        ]}>
-          {checked && <Text style={styles.checkmark}>✓</Text>}
-        </View>
-        <View style={styles.textContainer}>
-          <Text style={[
-            styles.label, 
-            theme.typography.body.small,
-            { color: theme.colors.text.secondary }
-          ]}>
-            {label}
-            {linkText && (
-              <Text 
-                style={[styles.link, { color: theme.colors.accent.primary }]}
-                onPress={onLinkPress}
-              >
-                {linkText}
-              </Text>
-            )}
+    <TouchableOpacity style={styles.container} onPress={onPress}>
+      <View style={[
+        styles.checkbox, 
+        { borderColor: checked ? theme.colors.accent.primary : theme.colors.border },
+        checked && { backgroundColor: theme.colors.accent.primary }
+      ]}>
+        {checked && <Text style={styles.checkmark}>✓</Text>}
+      </View>
+      <Text style={[
+        styles.label, 
+        theme.typography.body.small,
+        { color: theme.colors.text.secondary }
+      ]}>
+        {label}
+        {linkText && (
+          <Text 
+            style={[styles.link, { color: theme.colors.accent.primary }]}
+            onPress={onLinkPress}
+          >
+            {linkText}
           </Text>
-        </View>
-      </TouchableOpacity>
-    </View>
+        )}
+      </Text>
+    </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
-    alignItems: 'center',
-  },
-  checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
   },
   checkbox: {
     width: 20,
     height: 20,
     borderWidth: 2,
     borderRadius: 4,
-    marginRight: 10,
+    marginRight: 12, // Slightly increased for better spacing
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -74,20 +68,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
   },
-  textContainer: {
-    flex: 1,
-  },
   label: {
-    textAlign: 'center',
+    // Removed flex: 1 to prevent text from taking full width
+    // Text will now only take the space it needs
   },
   link: {
     fontWeight: '500',
   },
 });
-interface CheckboxProps {
-  label: string;
-  checked: boolean;
-  onPress: () => void;
-  linkText?: string;
-  onLinkPress?: () => void;
-}

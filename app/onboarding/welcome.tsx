@@ -76,10 +76,11 @@ const styles = StyleSheet.create({
   },
   bottomSection: {
     paddingHorizontal: 30,
-    paddingBottom: 40,
+    paddingBottom: 70, // Changed from 40 to 70 to match ChooseIngredientsScreen
     alignItems: 'center',
   },
   getStartedButton: {
     marginBottom: 20,
+    width: '100%', // Added for consistency with ChooseIngredientsScreen
   },
 });

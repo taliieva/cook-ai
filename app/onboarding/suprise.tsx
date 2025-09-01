@@ -411,7 +411,7 @@ const styles = StyleSheet.create({
   },
   bottomSection: { 
     paddingHorizontal: 30, 
-    paddingBottom: 40,
+    paddingBottom: 10,
     alignItems: 'center',
     zIndex: 2,
   },

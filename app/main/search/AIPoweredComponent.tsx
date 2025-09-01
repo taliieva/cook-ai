@@ -29,14 +29,49 @@ const countries = [
   { name: "Thai", flag: "🇹🇭", code: "th" },
 ];
 
-// Modes data with icons
+// Modes data with icons and colors
 const modes = [
-  { name: "Standard", icon: "restaurant-outline", code: "standard", isPro: false },
-  { name: "Gym", icon: "fitness-outline", code: "gym", isPro: false },
-  { name: "Diet", icon: "leaf-outline", code: "diet", isPro: false },
-  { name: "Vegan", icon: "flower-outline", code: "vegan", isPro: true },
-  { name: "Vegetarian", icon: "nutrition-outline", code: "vegetarian", isPro: true },
+  { 
+    name: "Standard", 
+    icon: "restaurant-outline", 
+    code: "standard", 
+    isPro: false,
+    color: "#FF8C00" // Orange
+  },
+  { 
+    name: "Gym", 
+    icon: "fitness-outline", 
+    code: "gym", 
+    isPro: false,
+    color: "#FF4444" // Red
+  },
+  { 
+    name: "Diet", 
+    icon: "leaf-outline", 
+    code: "diet", 
+    isPro: false,
+    color: "#4CAF50" // Green
+  },
+  { 
+    name: "Vegan", 
+    icon: "flower-outline", 
+    code: "vegan", 
+    isPro: true,
+    color: "#8BC34A" // Light Green
+  },
+  { 
+    name: "Vegetarian", 
+    icon: "nutrition-outline", 
+    code: "vegetarian", 
+    isPro: true,
+    color: "#4CAF50" // Green
+  },
 ];
+
+// Helper function to get mode color with transparency
+const getModeColor = (mode, opacity = 1) => {
+  return opacity === 1 ? mode.color : mode.color + Math.round(opacity * 255).toString(16).padStart(2, '0');
+};
 
 export default function AIPoweredComponent({ 
   ingredients, 
@@ -53,6 +88,7 @@ export default function AIPoweredComponent({
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showCountrySelector, setShowCountrySelector] = useState(false);
   const [showModeSelector, setShowModeSelector] = useState(false);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   
   // Mock user state
   const [isLoggedIn, setIsLoggedIn] = useState(true);
@@ -90,21 +126,50 @@ export default function AIPoweredComponent({
         console.log("Navigate to login");
         break;
       case "privacy":
+        router.push('/main/privacy/PrivacyPolicyScreen')
         console.log("Navigate to Privacy & Policy");
         break;
       case "terms":
+        router.push('/main/terms/TermsOfUseScreen')
         console.log("Navigate to Terms of Use");
         break;
       case "liked":
-        console.log("Navigate to Liked Recipes");
+        // Use the same component with standalone parameter
+        router.push({
+          pathname: '/main/liked/LikedComponent',
+          params: { standalone: 'true' }
+        });
         break;
       case "saved":
+        router.push('/main/saved/SavedRecipesScreen')
         console.log("Navigate to Saved Recipes");
         break;
       case "upgrade":
         onUpgrade(); // Call parent function to switch to billing
         break;
+
+case "logout":
+        console.log("Log out user");
+        // You can add actual logout logic here
+        setIsLoggedIn(false);
+        break;
+      case "delete":
+        // Show confirmation dialog instead of immediate action
+        setShowDeleteConfirmation(true);
+        break;
     }
+  };
+
+  const handleDeleteAccount = () => {
+    // Close the confirmation modal
+    setShowDeleteConfirmation(false);
+    // Navigate to onboarding
+    router.push("/onboarding");
+  };
+
+  const handleCancelDelete = () => {
+    // Just close the confirmation modal
+    setShowDeleteConfirmation(false);
   };
 
   const handleCountrySelect = (country: any) => {
@@ -122,6 +187,102 @@ export default function AIPoweredComponent({
     setSelectedMode(mode);
     setShowModeSelector(false);
   };
+
+  const DeleteConfirmationModal = () => (
+    <Modal
+      visible={showDeleteConfirmation}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={handleCancelDelete}
+    >
+      <View style={styles.confirmationOverlay}>
+        <View
+          style={[
+            styles.confirmationModal,
+            {
+              backgroundColor: theme.colors.background.secondary,
+              borderColor: theme.colors.border,
+            },
+          ]}
+        >
+          {/* Header */}
+          <View style={styles.confirmationHeader}>
+            <Text
+              style={[
+                styles.confirmationTitle,
+                { color: theme.colors.text.primary },
+              ]}
+            >
+              Delete Account
+            </Text>
+            <TouchableOpacity onPress={handleCancelDelete}>
+              <Ionicons
+                name="close"
+                size={24}
+                color={theme.colors.text.secondary}
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* Content */}
+          <View style={styles.confirmationContent}>
+            <Ionicons
+              name="warning-outline"
+              size={48}
+              color="#FF4444"
+              style={styles.warningIcon}
+            />
+            <Text
+              style={[
+                styles.confirmationMessage,
+                { color: theme.colors.text.primary },
+              ]}
+            >
+              Are you sure?
+            </Text>
+            <Text
+              style={[
+                styles.confirmationSubMessage,
+                { color: theme.colors.text.secondary },
+              ]}
+            >
+              This action cannot be undone and all your data will be permanently lost.
+            </Text>
+          </View>
+
+          {/* Buttons */}
+          <View style={styles.confirmationButtons}>
+            <TouchableOpacity
+              style={[
+                styles.cancelButton,
+                {
+                  backgroundColor: theme.colors.background.primary,
+                  borderColor: theme.colors.border,
+                },
+              ]}
+              onPress={handleCancelDelete}
+            >
+              <Text
+                style={[
+                  styles.cancelButtonText,
+                  { color: theme.colors.text.primary },
+                ]}
+              >
+                No
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={handleDeleteAccount}
+            >
+              <Text style={styles.deleteButtonText}>Yes, Delete</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
 
   const ProfileMenu = () => (
     <Modal
@@ -293,6 +454,51 @@ export default function AIPoweredComponent({
                   Saved Recipes
                 </Text>
               </TouchableOpacity>
+
+              <View
+                style={[
+                  styles.menuDivider,
+                  { backgroundColor: theme.colors.border },
+                ]}
+              />
+
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => handleProfileMenuOption("logout")}
+              >
+                <Ionicons
+                  name="log-out-outline"
+                  size={20}
+                  color={theme.colors.text.primary}
+                />
+                <Text
+                  style={[
+                    styles.menuText,
+                    { color: theme.colors.text.primary },
+                  ]}
+                >
+                  Log out
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => handleProfileMenuOption("delete")}
+              >
+                <Ionicons
+                  name="trash-outline"
+                  size={20}
+                  color="#FF4444"
+                />
+                <Text
+                  style={[
+                    styles.menuText,
+                    { color: "#FF4444" },
+                  ]}
+                >
+                  Delete account
+                </Text>
+              </TouchableOpacity>
             </>
           )}
         </View>
@@ -423,16 +629,16 @@ export default function AIPoweredComponent({
           <ScrollView style={styles.modeList}>
             {modes.map((mode, index) => {
               const isDisabled = mode.isPro && userPlan === "free";
+              const isSelected = selectedMode.code === mode.code;
               return (
                 <TouchableOpacity
                   key={index}
                   style={[
                     styles.modeItem,
                     {
-                      backgroundColor:
-                        selectedMode.code === mode.code
-                          ? theme.colors.accent.primary + "15"
-                          : "transparent",
+                      backgroundColor: isSelected
+                        ? getModeColor(mode, 0.15)
+                        : "transparent",
                       opacity: isDisabled ? 0.6 : 1,
                     },
                   ]}
@@ -441,21 +647,14 @@ export default function AIPoweredComponent({
                   <Ionicons
                     name={mode.icon as any}
                     size={24}
-                    color={
-                      selectedMode.code === mode.code
-                        ? theme.colors.accent.primary
-                        : theme.colors.text.primary
-                    }
+                    color={mode.color}
                   />
                   <View style={styles.modeContent}>
                     <Text
                       style={[
                         styles.modeName,
                         {
-                          color:
-                            selectedMode.code === mode.code
-                              ? theme.colors.accent.primary
-                              : theme.colors.text.primary,
+                          color: mode.color,
                         },
                       ]}
                     >
@@ -465,18 +664,18 @@ export default function AIPoweredComponent({
                       <View
                         style={[
                           styles.proBadge,
-                          { backgroundColor: theme.colors.accent.primary },
+                          { backgroundColor: mode.color },
                         ]}
                       >
                         <Text style={styles.proText}>PRO</Text>
                       </View>
                     )}
                   </View>
-                  {selectedMode.code === mode.code && (
+                  {isSelected && (
                     <Ionicons
                       name="checkmark"
                       size={20}
-                      color={theme.colors.accent.primary}
+                      color={mode.color}
                     />
                   )}
                   {isDisabled && (
@@ -499,6 +698,16 @@ export default function AIPoweredComponent({
     <>
       {/* Profile Section */}
       <View style={styles.profileSection}>
+        <TouchableOpacity
+          style={styles.notificationButton}
+          onPress={() => alert('Coming soon')}
+        >
+          <Ionicons
+            name="notifications-outline"
+            size={28}
+            color={theme.colors.text.primary}
+          />
+        </TouchableOpacity>
         <TouchableOpacity
           style={styles.profileButton}
           onPress={() => setShowProfileMenu(true)}
@@ -651,12 +860,12 @@ export default function AIPoweredComponent({
             <Ionicons
               name={selectedMode.icon as any}
               size={20}
-              color={theme.colors.text.primary}
+              color={selectedMode.color}
             />
             <Text
               style={[
                 styles.selectedModeText,
-                { color: theme.colors.text.primary },
+                { color: selectedMode.color },
               ]}
             >
               {selectedMode.name}
@@ -665,7 +874,7 @@ export default function AIPoweredComponent({
               <View
                 style={[
                   styles.proBadgeSmall,
-                  { backgroundColor: theme.colors.accent.primary },
+                  { backgroundColor: selectedMode.color },
                 ]}
               >
                 <Text style={styles.proTextSmall}>PRO</Text>
@@ -675,7 +884,7 @@ export default function AIPoweredComponent({
           <Ionicons
             name="chevron-down"
             size={20}
-            color={theme.colors.text.secondary}
+            color={selectedMode.color}
           />
         </TouchableOpacity>
       </View>
@@ -696,6 +905,7 @@ export default function AIPoweredComponent({
       <ProfileMenu />
       <CountrySelector />
       <ModeSelector />
+      <DeleteConfirmationModal />
     </>
   );
 }
@@ -704,9 +914,14 @@ const styles = StyleSheet.create({
   profileSection: {
     flexDirection: "row",
     justifyContent: "flex-end",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingTop: 10,
     paddingBottom: 5,
+    gap: 8,
+  },
+  notificationButton: {
+    padding: 8,
   },
   profileButton: {
     padding: 8,
@@ -751,7 +966,7 @@ const styles = StyleSheet.create({
   ingredientsSection: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingBottom: 30, // Add padding to account for footer height
+    paddingBottom: 30,
   },
   sectionTitle: {
     fontSize: 18,
@@ -803,7 +1018,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 12,
-    borderWidth: 1,
   },
   selectedModeContent: {
     flexDirection: "row",
@@ -828,7 +1042,7 @@ const styles = StyleSheet.create({
   buttonSection: {
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 50, // Increased from 10 to provide more space above footer
+    paddingBottom: 50,
   },
   findButton: {
     width: "100%",
@@ -983,6 +1197,87 @@ const styles = StyleSheet.create({
   proText: {
     color: "white",
     fontSize: 10,
+    fontWeight: "600",
+  },
+  // Delete Confirmation Modal Styles
+  confirmationOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  confirmationModal: {
+    width: "100%",
+    maxWidth: 400,
+    borderRadius: 16,
+    borderWidth: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  confirmationHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 10,
+  },
+  confirmationTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+  },
+  confirmationContent: {
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    alignItems: "center",
+  },
+  warningIcon: {
+    marginBottom: 16,
+  },
+  confirmationMessage: {
+    fontSize: 18,
+    fontWeight: "600",
+    textAlign: "center",
+    marginBottom: 12,
+  },
+  confirmationSubMessage: {
+    fontSize: 14,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  confirmationButtons: {
+    flexDirection: "row",
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  deleteButton: {
+    flex: 1,
+    backgroundColor: "#FF4444",
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  deleteButtonText: {
+    color: "white",
+    fontSize: 16,
     fontWeight: "600",
   },
 });

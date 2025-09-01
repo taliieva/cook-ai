@@ -23,7 +23,7 @@ export default function ChooseIngredientsScreen() {
   const theme = useTheme();
 
   const handleNext = () => {
-    router.push('/onboarding/ai-intro'); // or router.push('/ai-intro') if you have that screen
+    router.push('/onboarding/ai-intro');
   };
 
   return (
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     paddingHorizontal: 30,
-    paddingBottom: 70,
+    paddingBottom: 30, // This stays the same
   },
   nextButton: {
     width: '100%',

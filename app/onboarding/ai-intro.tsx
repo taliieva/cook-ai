@@ -14,6 +14,7 @@ import {
   StatusBar,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View
 } from "react-native";
@@ -24,17 +25,39 @@ export default function AIIntroScreen() {
   const router = useRouter();
   const theme = useTheme();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const [promoApplied, setPromoApplied] = useState(false);
+  const [promoError, setPromoError] = useState("");
 
   const handleBack = () => {
     router.back();
   };
 
   const handleClaimOffer = () => {
-    router.push("/onboarding/suprise"); // Navigate to surprise screen
+    router.push("/onboarding/suprise");
   };
 
-  const handleExpandPricing = () => {
+  const handleViewAllPlans = () => {
     setIsExpanded(!isExpanded);
+  };
+
+  const handleApplyPromo = () => {
+    // Mock promo code validation
+    if (promoCode.toLowerCase() === "save20" || promoCode.toLowerCase() === "welcome") {
+      setPromoApplied(true);
+      setPromoError("");
+    } else if (promoCode.trim() === "") {
+      setPromoError("Please enter a promo code");
+    } else {
+      setPromoError("Invalid promo code");
+      setPromoApplied(false);
+    }
+  };
+
+  const handleRemovePromo = () => {
+    setPromoApplied(false);
+    setPromoCode("");
+    setPromoError("");
   };
 
   return (
@@ -106,12 +129,79 @@ export default function AIIntroScreen() {
             {/* Content Container */}
             <View style={styles.bottomContent}>
               <View style={styles.buttonContainer}>
-                {/* Combined Pricing Container */}
-                <TouchableOpacity 
-                  style={styles.combinedPricingContainer}
-                  onPress={handleExpandPricing}
-                  activeOpacity={0.9}
-                >
+                {/* Promo Code Section */}
+                <View style={styles.promoContainer}>
+                  <BlurView intensity={15} tint="light" style={styles.promoBlur}>
+                    <LinearGradient
+                      colors={['rgba(59, 130, 246, 0.3)', 'rgba(147, 51, 234, 0.3)']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.promoGradientBorder}
+                    >
+                      <View style={styles.promoInnerContainer}>
+                        {!promoApplied ? (
+                          <View style={styles.promoInputContainer}>
+                            <View style={styles.promoInputWrapper}>
+                              <Ionicons 
+                                name="pricetag-outline" 
+                                size={18} 
+                                color="rgba(255, 255, 255, 0.7)" 
+                                style={styles.promoIcon}
+                              />
+                              <TextInput
+                                style={styles.promoInput}
+                                placeholder="Enter promo code"
+                                placeholderTextColor="rgba(255, 255, 255, 0.5)"
+                                value={promoCode}
+                                onChangeText={(text) => {
+                                  setPromoCode(text);
+                                  setPromoError("");
+                                }}
+                                autoCapitalize="characters"
+                              />
+                              <TouchableOpacity
+                                style={styles.applyButton}
+                                onPress={handleApplyPromo}
+                                activeOpacity={0.8}
+                              >
+                                <Text style={styles.applyButtonText}>Apply</Text>
+                              </TouchableOpacity>
+                            </View>
+                            {promoError ? (
+                              <Text style={styles.promoErrorText}>{promoError}</Text>
+                            ) : null}
+                          </View>
+                        ) : (
+                          <View style={styles.promoAppliedContainer}>
+                            <View style={styles.promoAppliedContent}>
+                              <Ionicons 
+                                name="checkmark-circle" 
+                                size={20} 
+                                color="#10B981" 
+                              />
+                              <Text style={styles.promoAppliedText}>
+                                Promo code applied! Extra 20% off
+                              </Text>
+                              <TouchableOpacity
+                                onPress={handleRemovePromo}
+                                style={styles.removePromoButton}
+                              >
+                                <Ionicons 
+                                  name="close-circle" 
+                                  size={18} 
+                                  color="rgba(255, 255, 255, 0.7)" 
+                                />
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                        )}
+                      </View>
+                    </LinearGradient>
+                  </BlurView>
+                </View>
+
+                {/* Pricing Container - Always shows Annual */}
+                <View style={styles.pricingContainer}>
                   {/* Save 50% Section */}
                   <View style={styles.saveSection}>
                     <Text style={styles.saveText}>Save 50%</Text>
@@ -124,16 +214,24 @@ export default function AIIntroScreen() {
                         {!isExpanded ? (
                           // Collapsed state - Show only Annual
                           <View style={styles.pricingOption}>
-                            <Text style={styles.pricingTitle}>Annual US$2.92/mo</Text>
-                            <Text style={styles.pricingSubtext}>12 mo - US$34.99</Text>
+                            <Text style={styles.pricingTitle}>
+                              Annual {promoApplied ? "US$2.34/mo" : "US$2.92/mo"}
+                            </Text>
+                            <Text style={styles.pricingSubtext}>
+                              12 mo - {promoApplied ? "US$27.99" : "US$34.99"}
+                            </Text>
                           </View>
                         ) : (
                           // Expanded state - Show both options
                           <>
                             {/* Annual Pricing - Top */}
                             <View style={styles.pricingOption}>
-                              <Text style={styles.pricingTitle}>Annual US$2.92/mo</Text>
-                              <Text style={styles.pricingSubtext}>12 mo - US$34.99</Text>
+                              <Text style={styles.pricingTitle}>
+                                Annual {promoApplied ? "US$2.34/mo" : "US$2.92/mo"}
+                              </Text>
+                              <Text style={styles.pricingSubtext}>
+                                12 mo - {promoApplied ? "US$27.99" : "US$34.99"}
+                              </Text>
                             </View>
 
                             {/* Divider */}
@@ -141,13 +239,32 @@ export default function AIIntroScreen() {
 
                             {/* Monthly Pricing - Bottom */}
                             <View style={styles.pricingOption}>
-                              <Text style={styles.pricingTitle}>Monthly US$17.99/mo</Text>
+                              <Text style={styles.pricingTitle}>
+                                Monthly {promoApplied ? "US$14.39/mo" : "US$17.99/mo"}
+                              </Text>
                             </View>
                           </>
                         )}
                       </View>
                     </BlurView>
                   </View>
+                </View>
+
+                {/* View All Plans Button */}
+                <TouchableOpacity 
+                  style={styles.viewAllPlansButton}
+                  onPress={handleViewAllPlans}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.viewAllPlansText}>
+                    {isExpanded ? 'Hide plans' : 'View all plans'}
+                  </Text>
+                  <Ionicons 
+                    name={isExpanded ? "chevron-up" : "chevron-down"} 
+                    size={16} 
+                    color="rgba(255, 255, 255, 0.8)" 
+                    style={styles.chevronIcon}
+                  />
                 </TouchableOpacity>
 
                 {/* Claim Offer Button */}
@@ -220,7 +337,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   bottomSection: {
-    height: 280,
+    height: 400, // Increased height to accommodate promo code section
   },
   maskedBlur: {
     flex: 1,
@@ -239,7 +356,6 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   bottomContent: {
-   
     position: "absolute",
     bottom: 0,
     left: 0,
@@ -247,13 +363,90 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   buttonContainer: {
-    height:'40%',
     paddingHorizontal: 30,
     alignItems: "center",
   },
-  combinedPricingContainer: {
+  // Promo Code Styles
+  promoContainer: {
     width: '98%',
-    marginBottom: 20,
+    marginBottom: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  promoBlur: {
+    flex: 1,
+  },
+  promoGradientBorder: {
+    padding: 1.5,
+    borderRadius: 12,
+  },
+  promoInnerContainer: {
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: 10,
+    padding: 16,
+  },
+  promoInputContainer: {
+    width: '100%',
+  },
+  promoInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 2,
+  },
+  promoIcon: {
+    marginRight: 8,
+  },
+  promoInput: {
+    flex: 1,
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '500',
+    paddingVertical: 12,
+  },
+  applyButton: {
+    backgroundColor: 'rgba(59, 130, 246, 0.8)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+    marginLeft: 8,
+  },
+  applyButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  promoErrorText: {
+    color: '#EF4444',
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 6,
+    textAlign: 'center',
+  },
+  promoAppliedContainer: {
+    width: '100%',
+  },
+  promoAppliedContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 4,
+  },
+  promoAppliedText: {
+    color: '#10B981',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 8,
+    marginRight: 8,
+  },
+  removePromoButton: {
+    padding: 2,
+  },
+  pricingContainer: {
+    width: '98%',
+    marginBottom: 16,
     borderRadius: 16,
     overflow: 'hidden',
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -261,7 +454,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   saveSection: {
-    backgroundColor: 'rgba(59, 130, 246, 0.9)', // Blue tone
+    backgroundColor: 'rgba(59, 130, 246, 0.9)',
     paddingVertical: 6,
     paddingHorizontal: 16,
     alignItems: 'center',
@@ -304,6 +497,23 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     marginVertical: 6,
     marginHorizontal: 20,
+  },
+  viewAllPlansButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  viewAllPlansText: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  chevronIcon: {
+    marginLeft: 6,
   },
   claimButton: {
     width: "100%",
