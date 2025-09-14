@@ -200,7 +200,7 @@ export default function SupriseScreen() {
   });
 
   const handleContinue = useCallback(() => {
-    router.push("/onboarding/ingredients-search");
+    router.push("/onboarding/app-insight");
   }, [router]);
 
   return (
