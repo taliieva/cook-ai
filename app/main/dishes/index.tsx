@@ -1,10 +1,11 @@
 import { useTheme } from "@/hooks/useTheme";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from 'expo-haptics';
-import React, { useState, useEffect } from "react";
+import { LinearGradient } from "expo-linear-gradient";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
+  Animated,
   Dimensions,
   Image,
   SafeAreaView,
@@ -14,107 +15,45 @@ import {
   Text,
   TouchableOpacity,
   View,
-  Animated,
 } from "react-native";
 
 const { width, height } = Dimensions.get("window");
 
-// Enhanced mock dishes data with more details
-const dishes = [
-  {
-    id: 1,
-    name: "Spaghetti Carbonara",
-    culture: "Italian",
-    country: "Italy",
-    dishType: "Pasta",
-    prepTime: "25 min",
-    calories: 520,
-    outdoorCost: 18,
-    homeCost: 6,
-    image:
-        "https://images.unsplash.com/photo-1612874742237-6526221588e3?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
-    isLiked: false,
-    isSaved: true,
-  },
-  {
-    id: 2,
-    name: "Chicken Teriyaki",
-    culture: "Japanese",
-    country: "Japan",
-    dishType: "Main Course",
-    prepTime: "30 min",
-    calories: 380,
-    outdoorCost: 22,
-    homeCost: 8,
-    image:
-        "https://images.unsplash.com/photo-1546833999-b9f581a1996d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
-    isLiked: true,
-    isSaved: false,
-  },
-  {
-    id: 3,
-    name: "Beef Tacos",
-    culture: "Mexican",
-    country: "Mexico",
-    dishType: "Street Food",
-    prepTime: "20 min",
-    calories: 290,
-    outdoorCost: 12,
-    homeCost: 4,
-    image:
-        "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
-    isLiked: false,
-    isSaved: false,
-  },
-  {
-    id: 4,
-    name: "Pad Thai",
-    culture: "Thai",
-    country: "Thailand",
-    dishType: "Stir-fry",
-    prepTime: "35 min",
-    calories: 450,
-    outdoorCost: 16,
-    homeCost: 7,
-    image:
-        "https://images.unsplash.com/photo-1559314809-0f31657def5e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
-    isLiked: true,
-    isSaved: true,
-  },
-  {
-    id: 5,
-    name: "Chicken Curry",
-    culture: "Indian",
-    country: "India",
-    dishType: "Curry",
-    prepTime: "45 min",
-    calories: 410,
-    outdoorCost: 14,
-    homeCost: 5,
-    image:
-        "https://images.unsplash.com/photo-1588166524941-3bf61a9c41db?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
-    isLiked: false,
-    isSaved: true,
-  },
-  {
-    id: 6,
-    name: "Caesar Salad",
-    culture: "American",
-    country: "USA",
-    dishType: "Salad",
-    prepTime: "15 min",
-    calories: 250,
-    outdoorCost: 15,
-    homeCost: 4,
-    image:
-        "https://images.unsplash.com/photo-1551248429-40975aa4de74?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
-    isLiked: true,
-    isSaved: false,
-  },
-];
+// Define proper types
+interface DishData {
+  id: number;
+  name: string;
+  culture: string;
+  country: string;
+  dishType: string;
+  prepTime: string;
+  calories: number;
+  outdoorCost: number;
+  homeCost: number;
+  moneySaved: number;
+  image: string;
+  isLiked: boolean;
+  isSaved: boolean;
+  shortDescription: string;
+  steps: string[];
+}
+
+interface ApiDish {
+  DishName: string;
+  CuisineType: string;
+  DishType: string;
+  EstimatedPortionSize: string;
+  EstimatedCalories: number;
+  EstimatedOutsideCost: number;
+  EstimatedHomeCost: number;
+  MoneySaved: number;
+  PictureURL: string;
+  ShortDescription: string;
+  Steps: string[];
+}
 
 // Country color mapping with appropriate colors
-const countryColors = {
+const countryColors: { [key: string]: string } = {
   Turkey: "#DC143C",
   Japan: "#BC002D",
   Italy: "#009246",
@@ -122,12 +61,31 @@ const countryColors = {
   Mexico: "#006847",
   India: "#FF9933",
   USA: "#B22234",
+  "United States": "#B22234",
   Thailand: "#ED1C24",
   Greece: "#0D5EAF",
+  China: "#DE2910",
+  Azerbaijan: "#3F9C35",
+  "All Countries": "#95A5A6",
+};
+
+// Culture to country mapping
+const cultureToCountry: { [key: string]: string } = {
+  'Italian': 'Italy',
+  'Japanese': 'Japan',
+  'Mexican': 'Mexico',
+  'Thai': 'Thailand',
+  'Indian': 'India',
+  'American': 'USA',
+  'Greek': 'Greece',
+  'Turkish': 'Turkey',
+  'Chinese': 'China',
+  'Azerbaijani': 'Azerbaijan',
+  'French': 'France',
 };
 
 // AI Loading Overlay Component
-const AILoadingOverlay = ({ progress, isVisible }) => {
+const AILoadingOverlay = ({ progress, isVisible }: { progress: number; isVisible: boolean }) => {
   const [rotateAnim] = useState(new Animated.Value(0));
   const [pulseAnim] = useState(new Animated.Value(1));
 
@@ -216,26 +174,115 @@ const AILoadingOverlay = ({ progress, isVisible }) => {
 export default function DishesScreen() {
   const router = useRouter();
   const theme = useTheme();
-  const [dishStates, setDishStates] = useState([]);
+  const params = useLocalSearchParams();
+  
+  const [dishStates, setDishStates] = useState<DishData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [loadingProgress, setLoadingProgress] = useState({});
+  const [loadingProgress, setLoadingProgress] = useState<{ [key: number]: number }>({});
+  const [dishes, setDishes] = useState<DishData[]>([]);
+  const [headerInfo, setHeaderInfo] = useState({
+    title: "",
+    description: "",
+    summary: ""
+  });
 
   useEffect(() => {
-    // Simulate AI recipe generation
-    simulateAIRecipeGeneration();
+    // Parse the data from navigation params
+    parseApiData();
   }, []);
 
-  const simulateAIRecipeGeneration = async () => {
+  const parseApiData = () => {
+    try {
+      console.log("Received params:", params);
+      
+      // Parse the API response data
+      const dishData = params.dishData ? JSON.parse(params.dishData as string) : null;
+      const localizedSummary = params.localizedSummary ? JSON.parse(params.localizedSummary as string) : null;
+      const ingredients = params.ingredients ? JSON.parse(params.ingredients as string) : [];
+      
+      console.log("Parsed dish data:", dishData);
+      console.log("Localized summary:", localizedSummary);
+      
+      if (dishData && dishData.DishSuggestions && Array.isArray(dishData.DishSuggestions)) {
+        // Transform API response to component format
+        const transformedDishes: DishData[] = dishData.DishSuggestions.map((dish: ApiDish, index: number) => ({
+          id: index + 1,
+          name: dish.DishName || "Unknown Dish",
+          culture: dish.CuisineType || "Unknown",
+          country: dish.CuisineType || "Unknown",
+          dishType: dish.DishType || "Unknown",
+          prepTime: extractPrepTime(dish.EstimatedPortionSize) || "25 min",
+          calories: dish.EstimatedCalories || 0,
+          outdoorCost: dish.EstimatedOutsideCost || 0,
+          homeCost: dish.EstimatedHomeCost || 0,
+          moneySaved: dish.MoneySaved || 0,
+          image: dish.PictureURL || getDefaultImageForCuisine(dish.CuisineType),
+          isLiked: false,
+          isSaved: false,
+          shortDescription: dish.ShortDescription || "",
+          steps: dish.Steps || [],
+        }));
+
+        console.log("Transformed dishes:", transformedDishes);
+
+        setDishes(transformedDishes);
+        setHeaderInfo({
+          title: dishData.CatchyTitle || "Found Dishes",
+          description: dishData.IngredientDescription || "",
+          summary: localizedSummary?.Summary || ""
+        });
+
+        // Start the AI generation simulation
+        simulateAIRecipeGeneration(transformedDishes);
+      } else {
+        console.warn("No dish data found in params or invalid format");
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error("Error parsing API data:", error);
+      setIsLoading(false);
+    }
+  };
+
+  const extractPrepTime = (portionSize: string): string => {
+    // Try to extract time information or return default
+    if (portionSize && typeof portionSize === 'string') {
+      if (portionSize.includes('min')) {
+        return portionSize;
+      }
+      // If it's portion info, return default prep time
+      return "25 min";
+    }
+    return "25 min";
+  };
+
+  const getDefaultImageForCuisine = (cuisine: string): string => {
+    // Return default images based on cuisine type
+    const defaultImages: { [key: string]: string } = {
+      'Italian': 'https://images.unsplash.com/photo-1612874742237-6526221588e3?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+      'Mexican': 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+      'American': 'https://images.unsplash.com/photo-1551248429-40975aa4de74?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+      'Japanese': 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+      'Chinese': 'https://images.unsplash.com/photo-1559314809-0f31657def5e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+      'Indian': 'https://images.unsplash.com/photo-1588166524941-3bf61a9c41db?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+      'Thai': 'https://images.unsplash.com/photo-1559314809-0f31657def5e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+      'French': 'https://images.unsplash.com/photo-1612874742237-6526221588e3?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+    };
+    
+    return defaultImages[cuisine] || 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80';
+  };
+
+  const simulateAIRecipeGeneration = async (dishesToGenerate: DishData[]) => {
     // Initialize loading states
-    const initialProgress = {};
-    dishes.forEach(dish => {
+    const initialProgress: { [key: number]: number } = {};
+    dishesToGenerate.forEach((dish) => {
       initialProgress[dish.id] = 0;
     });
     setLoadingProgress(initialProgress);
 
     // Generate recipes one by one with AI-like progression
-    for (let i = 0; i < dishes.length; i++) {
-      const dish = dishes[i];
+    for (let i = 0; i < dishesToGenerate.length; i++) {
+      const dish = dishesToGenerate[i];
 
       // Start loading this dish
       await simulateDishGeneration(dish.id, i);
@@ -252,7 +299,7 @@ export default function DishesScreen() {
     }, 500);
   };
 
-  const simulateDishGeneration = (dishId, index) => {
+  const simulateDishGeneration = (dishId: number, index: number): Promise<void> => {
     return new Promise((resolve) => {
       let progress = 0;
       let lastPercentage = 0;
@@ -267,25 +314,20 @@ export default function DishesScreen() {
 
           // Different haptic types based on progress ranges
           if (currentPercentage <= 25) {
-            // Early stage - very light feedback
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
           } else if (currentPercentage <= 50) {
-            // Mid stage - light feedback every 2%
             if (currentPercentage % 2 === 0) {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             }
           } else if (currentPercentage <= 75) {
-            // Advanced stage - medium feedback every 3%
             if (currentPercentage % 3 === 0) {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             }
           } else if (currentPercentage <= 90) {
-            // Almost done - medium feedback every 2%
             if (currentPercentage % 2 === 0) {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             }
           } else if (currentPercentage <= 99) {
-            // Final stretch - light feedback every 1%
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
           }
         }
@@ -294,10 +336,7 @@ export default function DishesScreen() {
         if (progress >= 100) {
           progress = 100;
           clearInterval(interval);
-
-          // Success haptic feedback
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
           resolve();
         }
 
@@ -305,7 +344,7 @@ export default function DishesScreen() {
           ...prev,
           [dishId]: progress
         }));
-      }, 150 + Math.random() * 200); // Faster updates for smoother percentage increments
+      }, 150 + Math.random() * 200);
     });
   };
 
@@ -313,11 +352,17 @@ export default function DishesScreen() {
     router.back();
   };
 
-  const handleDishPress = (dish) => {
-    router.push(`/main/dishes/${dish.id}`);
+  const handleDishPress = (dish: DishData) => {
+    // Pass the dish data to the detail screen
+    router.push({
+      pathname: `/main/dishes/${dish.id}`,
+      params: {
+        dishData: JSON.stringify(dish)
+      }
+    });
   };
 
-  const handleLike = (dishId) => {
+  const handleLike = (dishId: number) => {
     setDishStates((prev) =>
         prev.map((dish) =>
             dish.id === dishId ? { ...dish, isLiked: !dish.isLiked } : dish
@@ -325,7 +370,7 @@ export default function DishesScreen() {
     );
   };
 
-  const handleSave = (dishId) => {
+  const handleSave = (dishId: number) => {
     setDishStates((prev) =>
         prev.map((dish) =>
             dish.id === dishId ? { ...dish, isSaved: !dish.isSaved } : dish
@@ -333,33 +378,22 @@ export default function DishesScreen() {
     );
   };
 
-  const truncateName = (name, maxLength = 12) => {
-    return name.length > maxLength ? name.substring(0, maxLength) + "..." : name;
+  const truncateName = (name: string, maxLength = 16): string => {
+    return name?.length > maxLength ? name.substring(0, maxLength) + "..." : name;
   };
 
-  const getCountryBackgroundColor = (culture) => {
-    const cultureToCountry = {
-      'Italian': 'Italy',
-      'Japanese': 'Japan',
-      'Mexican': 'Mexico',
-      'Thai': 'Thailand',
-      'Indian': 'India',
-      'American': 'USA',
-      'Greek': 'Greece',
-      'Turkish': 'Turkey'
-    };
-
-    const country = cultureToCountry[culture];
+  const getCountryBackgroundColor = (culture: string): string => {
+    const country = cultureToCountry[culture] || culture;
     return countryColors[country] || "#95A5A6";
   };
 
-  const renderLoadingCard = (dish, index) => {
+  const renderLoadingCard = (dish: DishData, index: number) => {
     const progress = loadingProgress[dish.id] || 0;
-    const isLoading = progress < 100;
+    const isLoadingCard = progress < 100;
 
     return (
         <View
-            key={`dish-${dish.id}`}
+            key={`loading-${dish.id}-${index}`}
             style={[
               styles.dishCard,
               {
@@ -369,7 +403,7 @@ export default function DishesScreen() {
             ]}
         >
           {/* Background dish content (blurred when loading) */}
-          <View style={[styles.dishContent, isLoading && styles.blurredContent]}>
+          <View style={[styles.dishContent, isLoadingCard && styles.blurredContent]}>
             {/* Left Section - Image */}
             <View style={styles.imageSection}>
               <Image
@@ -471,7 +505,7 @@ export default function DishesScreen() {
                     },
                   ]}
                   onPress={() => handleLike(dish.id)}
-                  disabled={isLoading}
+                  disabled={isLoadingCard}
               >
                 <Ionicons
                     name={dish.isLiked ? "heart" : "heart-outline"}
@@ -491,7 +525,7 @@ export default function DishesScreen() {
                     },
                   ]}
                   onPress={() => handleSave(dish.id)}
-                  disabled={isLoading}
+                  disabled={isLoadingCard}
               >
                 <Ionicons
                     name={dish.isSaved ? "bookmark" : "bookmark-outline"}
@@ -507,15 +541,15 @@ export default function DishesScreen() {
           </View>
 
           {/* AI Loading Overlay */}
-          <AILoadingOverlay progress={progress} isVisible={isLoading} />
+          <AILoadingOverlay progress={progress} isVisible={isLoadingCard} />
         </View>
     );
   };
 
-  const renderDishCard = (dish) => {
+  const renderDishCard = (dish: DishData) => {
     return (
         <TouchableOpacity
-            key={dish.id}
+            key={`completed-${dish.id}`}
             style={[
               styles.dishCard,
               {
@@ -697,7 +731,7 @@ export default function DishesScreen() {
             <Text
                 style={[styles.headerTitle, { color: theme.colors.text.primary }]}
             >
-              {isLoading ? "AI Discovering..." : "Found Dishes"}
+              {isLoading ? "AI Discovering..." : headerInfo.title || "Found Dishes"}
             </Text>
             {isLoading && (
                 <View style={styles.aiHeaderIndicator}>
@@ -722,6 +756,11 @@ export default function DishesScreen() {
                 : `${dishStates.length} delicious dishes found`
             }
           </Text>
+          {headerInfo.summary && !isLoading && (
+            <Text style={[styles.summaryText, { color: theme.colors.text.secondary }]}>
+              {headerInfo.summary}
+            </Text>
+          )}
         </View>
 
         {/* Dishes List */}
@@ -735,6 +774,16 @@ export default function DishesScreen() {
             const isGenerated = dishStates.find(d => d.id === dish.id);
             return isGenerated ? renderDishCard(dish) : renderLoadingCard(dish, index);
           })}
+
+          {/* Empty state */}
+          {!isLoading && dishes.length === 0 && (
+            <View style={styles.emptyState}>
+              <Ionicons name="restaurant-outline" size={64} color={theme.colors.text.secondary} />
+              <Text style={[styles.emptyText, { color: theme.colors.text.secondary }]}>
+                No dishes found. Try adjusting your ingredients or search criteria.
+              </Text>
+            </View>
+          )}
 
           {/* Bottom padding for footer */}
           <View style={styles.bottomPadding} />
@@ -798,6 +847,12 @@ const styles = StyleSheet.create({
   resultsText: {
     fontSize: 16,
     fontWeight: "500",
+    marginBottom: 8,
+  },
+  summaryText: {
+    fontSize: 14,
+    lineHeight: 20,
+    opacity: 0.8,
   },
   dishesContainer: {
     flex: 1,
@@ -821,10 +876,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 6,
     elevation: 4,
-  },
-  loadingCard: {
-    justifyContent: "center",
-    alignItems: "center",
   },
   dishContent: {
     flex: 1,
@@ -889,66 +940,6 @@ const styles = StyleSheet.create({
     color: "#764ba2",
     textTransform: "uppercase",
     letterSpacing: 0.8,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingBackground: {
-    flex: 1,
-    width: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 16,
-  },
-  spinnerContainer: {
-    marginBottom: 12,
-  },
-  aiSpinner: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  spinnerCore: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingTextContainer: {
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  loadingText: {
-    color: "white",
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-  progressText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "700",
-  },
-  progressBarContainer: {
-    width: "80%",
-    alignItems: "center",
-  },
-  progressBarBackground: {
-    width: "100%",
-    height: 4,
-    backgroundColor: "rgba(255, 255, 255, 0.3)",
-    borderRadius: 2,
-    overflow: "hidden",
-  },
-  progressBarFill: {
-    height: "100%",
-    borderRadius: 2,
   },
   imageSection: {
     width: 120,
@@ -1073,6 +1064,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 3,
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 80,
+  },
+  emptyText: {
+    fontSize: 16,
+    textAlign: "center",
+    marginTop: 16,
+    paddingHorizontal: 20,
+    lineHeight: 24,
   },
   bottomPadding: {
     height: 20,

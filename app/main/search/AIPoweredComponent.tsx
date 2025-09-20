@@ -4,6 +4,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Dimensions,
   Modal,
   ScrollView,
@@ -13,6 +15,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { fetchWithAuth } from "../../../utils/auth"; // Import your auth helper
 
 const { width, height } = Dimensions.get("window");
 
@@ -31,41 +34,11 @@ const countries = [
 
 // Modes data with icons and colors
 const modes = [
-  { 
-    name: "Standard", 
-    icon: "restaurant-outline", 
-    code: "standard", 
-    isPro: false,
-    color: "#FF8C00" // Orange
-  },
-  { 
-    name: "Gym", 
-    icon: "fitness-outline", 
-    code: "gym", 
-    isPro: false,
-    color: "#FF4444" // Red
-  },
-  { 
-    name: "Diet", 
-    icon: "leaf-outline", 
-    code: "diet", 
-    isPro: false,
-    color: "#4CAF50" // Green
-  },
-  { 
-    name: "Vegan", 
-    icon: "flower-outline", 
-    code: "vegan", 
-    isPro: true,
-    color: "#8BC34A" // Light Green
-  },
-  { 
-    name: "Vegetarian", 
-    icon: "nutrition-outline", 
-    code: "vegetarian", 
-    isPro: true,
-    color: "#4CAF50" // Green
-  },
+  { name: "Standard", icon: "restaurant-outline", code: "standard", isPro: false, color: "#FF8C00" },
+  { name: "Gym", icon: "fitness-outline", code: "gym", isPro: false, color: "#FF4444" },
+  { name: "Diet", icon: "leaf-outline", code: "diet", isPro: false, color: "#4CAF50" },
+  { name: "Vegan", icon: "flower-outline", code: "vegan", isPro: true, color: "#8BC34A" },
+  { name: "Vegetarian", icon: "nutrition-outline", code: "vegetarian", isPro: true, color: "#4CAF50" },
 ];
 
 // Helper function to get mode color with transparency
@@ -73,15 +46,31 @@ const getModeColor = (mode, opacity = 1) => {
   return opacity === 1 ? mode.color : mode.color + Math.round(opacity * 255).toString(16).padStart(2, '0');
 };
 
-export default function AIPoweredComponent({ 
-  ingredients, 
-  setIngredients, 
-  selectedCountry, 
+// Country code to country name mapping for API
+const getCountryNameForAPI = (countryCode: string): string => {
+  const countryMap: { [key: string]: string } = {
+    "all": "All Countries",
+    "it": "Italy",
+    "cn": "China", 
+    "mx": "Mexico",
+    "jp": "Japan",
+    "fr": "France",
+    "in": "India",
+    "us": "United States",
+    "th": "Thailand",
+  };
+  return countryMap[countryCode] || "All Countries";
+};
+
+export default function AIPoweredComponent({
+  ingredients,
+  setIngredients,
+  selectedCountry,
   setSelectedCountry,
   selectedMode,
   setSelectedMode,
-  onUpgrade 
-} : any) {
+  onUpgrade
+}: any) {
   const router = useRouter();
   const theme = useTheme();
   const [searchText, setSearchText] = useState("");
@@ -89,7 +78,8 @@ export default function AIPoweredComponent({
   const [showCountrySelector, setShowCountrySelector] = useState(false);
   const [showModeSelector, setShowModeSelector] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
-  
+  const [isLoading, setIsLoading] = useState(false);
+
   // Mock user state
   const [isLoggedIn, setIsLoggedIn] = useState(true);
   const [userPlan, setUserPlan] = useState("free");
@@ -101,25 +91,82 @@ export default function AIPoweredComponent({
     }
   };
 
-  const handleRemoveIngredient = (ingredientToRemove : any) => {
+  console.log('search component')
+
+  const handleRemoveIngredient = (ingredientToRemove: any) => {
     setIngredients(
       ingredients.filter((ingredient: any) => ingredient !== ingredientToRemove)
     );
   };
 
-  const handleFindDishes = () => {
-    // Pass the selected mode and country to the dishes screen
-    router.push({
-      pathname: "/main/dishes",
-      params: {
-        country: selectedCountry.code,
-        mode: selectedMode.code,
-        ingredients: JSON.stringify(ingredients)
+  const handleFindDishes = async () => {
+    if (ingredients.length === 0) {
+      Alert.alert("No Ingredients", "Please add at least one ingredient to find dishes.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const requestBody = {
+        ingredients: ingredients,
+        country: getCountryNameForAPI(selectedCountry.code),
+        language: "en", // You can make this dynamic based on user preference
+        deviceLanguage: "en-US", // You can get this from device settings
+        dietType: selectedMode.code
+      };
+
+      console.log("=== API Request Debug ===");
+      console.log("Endpoint:", "https://api.thecookai.app/v1/recipes");
+      console.log("Request body:", JSON.stringify(requestBody, null, 2));
+      console.log("========================");
+
+      const response = await fetchWithAuth("https://api.thecookai.app/v1/recipes", {
+        method: "POST",
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    });
+
+      const data = await response.json();
+      
+      // Better logging to see the full response structure
+      console.log("Full response:", JSON.stringify(data, null, 2));
+
+      // Validate response structure
+      if (!data.dishData || !data.dishData.DishSuggestions) {
+        throw new Error("Invalid response structure from API");
+      }
+
+      // Navigate to dishes screen with the response data
+      router.push({
+        pathname: "/main/dishes",
+        params: {
+          country: selectedCountry.code,
+          mode: selectedMode.code,
+          ingredients: JSON.stringify(ingredients),
+          dishData: JSON.stringify(data.dishData),
+          localizedSummary: JSON.stringify(data.localizedSummary || {}),
+          requestId: data.requestId || "",
+          searchId: data.searchId || "",
+          usageInfo: JSON.stringify(data.usageInfo || {})
+        }
+      });
+
+    } catch (error) {
+      console.error("Error fetching dishes:", error);
+      Alert.alert(
+        "Error", 
+        "Failed to fetch dishes. Please check your internet connection and try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleProfileMenuOption = (option:any) => {
+  const handleProfileMenuOption = (option: any) => {
     setShowProfileMenu(false);
     switch (option) {
       case "login":
@@ -134,7 +181,6 @@ export default function AIPoweredComponent({
         console.log("Navigate to Terms of Use");
         break;
       case "liked":
-        // Use the same component with standalone parameter
         router.push({
           pathname: '/main/liked/LikedComponent',
           params: { standalone: 'true' }
@@ -145,30 +191,24 @@ export default function AIPoweredComponent({
         console.log("Navigate to Saved Recipes");
         break;
       case "upgrade":
-        onUpgrade(); // Call parent function to switch to billing
+        onUpgrade();
         break;
-
-case "logout":
+      case "logout":
         console.log("Log out user");
-        // You can add actual logout logic here
         setIsLoggedIn(false);
         break;
       case "delete":
-        // Show confirmation dialog instead of immediate action
         setShowDeleteConfirmation(true);
         break;
     }
   };
 
   const handleDeleteAccount = () => {
-    // Close the confirmation modal
     setShowDeleteConfirmation(false);
-    // Navigate to onboarding
     router.push("/onboarding");
   };
 
   const handleCancelDelete = () => {
-    // Just close the confirmation modal
     setShowDeleteConfirmation(false);
   };
 
@@ -179,7 +219,6 @@ case "logout":
 
   const handleModeSelect = (mode: any) => {
     if (mode.isPro && userPlan === "free") {
-      // Show upgrade prompt for pro features
       setShowModeSelector(false);
       onUpgrade();
       return;
@@ -196,61 +235,41 @@ case "logout":
       onRequestClose={handleCancelDelete}
     >
       <View style={styles.confirmationOverlay}>
-        <View
-          style={[
-            styles.confirmationModal,
-            {
-              backgroundColor: theme.colors.background.secondary,
-              borderColor: theme.colors.border,
-            },
-          ]}
-        >
-          {/* Header */}
+        <View style={[
+          styles.confirmationModal,
+          {
+            backgroundColor: theme.colors.background.secondary,
+            borderColor: theme.colors.border,
+          },
+        ]}>
           <View style={styles.confirmationHeader}>
-            <Text
-              style={[
-                styles.confirmationTitle,
-                { color: theme.colors.text.primary },
-              ]}
-            >
+            <Text style={[
+              styles.confirmationTitle,
+              { color: theme.colors.text.primary },
+            ]}>
               Delete Account
             </Text>
             <TouchableOpacity onPress={handleCancelDelete}>
-              <Ionicons
-                name="close"
-                size={24}
-                color={theme.colors.text.secondary}
-              />
+              <Ionicons name="close" size={24} color={theme.colors.text.secondary} />
             </TouchableOpacity>
           </View>
-
-          {/* Content */}
+          
           <View style={styles.confirmationContent}>
-            <Ionicons
-              name="warning-outline"
-              size={48}
-              color="#FF4444"
-              style={styles.warningIcon}
-            />
-            <Text
-              style={[
-                styles.confirmationMessage,
-                { color: theme.colors.text.primary },
-              ]}
-            >
+            <Ionicons name="warning-outline" size={48} color="#FF4444" style={styles.warningIcon} />
+            <Text style={[
+              styles.confirmationMessage,
+              { color: theme.colors.text.primary },
+            ]}>
               Are you sure?
             </Text>
-            <Text
-              style={[
-                styles.confirmationSubMessage,
-                { color: theme.colors.text.secondary },
-              ]}
-            >
+            <Text style={[
+              styles.confirmationSubMessage,
+              { color: theme.colors.text.secondary },
+            ]}>
               This action cannot be undone and all your data will be permanently lost.
             </Text>
           </View>
-
-          {/* Buttons */}
+          
           <View style={styles.confirmationButtons}>
             <TouchableOpacity
               style={[
@@ -262,20 +281,14 @@ case "logout":
               ]}
               onPress={handleCancelDelete}
             >
-              <Text
-                style={[
-                  styles.cancelButtonText,
-                  { color: theme.colors.text.primary },
-                ]}
-              >
+              <Text style={[
+                styles.cancelButtonText,
+                { color: theme.colors.text.primary },
+              ]}>
                 No
               </Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={handleDeleteAccount}
-            >
+            <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteAccount}>
               <Text style={styles.deleteButtonText}>Yes, Delete</Text>
             </TouchableOpacity>
           </View>
@@ -296,65 +309,49 @@ case "logout":
         activeOpacity={1}
         onPress={() => setShowProfileMenu(false)}
       >
-        <View
-          style={[
-            styles.profileMenu,
-            {
-              backgroundColor: theme.colors.background.secondary,
-              borderColor: theme.colors.border,
-            },
-          ]}
-        >
+        <View style={[
+          styles.profileMenu,
+          {
+            backgroundColor: theme.colors.background.secondary,
+            borderColor: theme.colors.border,
+          },
+        ]}>
           {!isLoggedIn ? (
             <TouchableOpacity
               style={styles.menuItem}
               onPress={() => handleProfileMenuOption("login")}
             >
-              <Ionicons
-                name="log-in-outline"
-                size={20}
-                color={theme.colors.text.primary}
-              />
-              <Text
-                style={[styles.menuText, { color: theme.colors.text.primary }]}
-              >
+              <Ionicons name="log-in-outline" size={20} color={theme.colors.text.primary} />
+              <Text style={[styles.menuText, { color: theme.colors.text.primary }]}>
                 Log in
               </Text>
             </TouchableOpacity>
           ) : (
             <>
               <View style={styles.planSection}>
-                <Text
-                  style={[
-                    styles.planTitle,
-                    { color: theme.colors.text.primary },
-                  ]}
-                >
+                <Text style={[
+                  styles.planTitle,
+                  { color: theme.colors.text.primary },
+                ]}>
                   Your Plan
                 </Text>
                 <View style={styles.planContent}>
-                  <View
-                    style={[
-                      styles.planBadge,
+                  <View style={[
+                    styles.planBadge,
+                    {
+                      backgroundColor: userPlan === "pro" 
+                        ? theme.colors.accent.primary + "20" 
+                        : theme.colors.text.secondary + "20",
+                    },
+                  ]}>
+                    <Text style={[
+                      styles.planLabel,
                       {
-                        backgroundColor:
-                          userPlan === "pro"
-                            ? theme.colors.accent.primary + "20"
-                            : theme.colors.text.secondary + "20",
+                        color: userPlan === "pro" 
+                          ? theme.colors.accent.primary 
+                          : theme.colors.text.secondary,
                       },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.planLabel,
-                        {
-                          color:
-                            userPlan === "pro"
-                              ? theme.colors.accent.primary
-                              : theme.colors.text.secondary,
-                        },
-                      ]}
-                    >
+                    ]}>
                       {userPlan === "pro" ? "Premium" : "Free"}
                     </Text>
                   </View>
@@ -371,131 +368,91 @@ case "logout":
                   )}
                 </View>
               </View>
-
-              <View
-                style={[
-                  styles.menuDivider,
-                  { backgroundColor: theme.colors.border },
-                ]}
-              />
-
+              
+              <View style={[
+                styles.menuDivider,
+                { backgroundColor: theme.colors.border },
+              ]} />
+              
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => handleProfileMenuOption("privacy")}
               >
-                <Ionicons
-                  name="shield-outline"
-                  size={20}
-                  color={theme.colors.text.primary}
-                />
-                <Text
-                  style={[
-                    styles.menuText,
-                    { color: theme.colors.text.primary },
-                  ]}
-                >
+                <Ionicons name="shield-outline" size={20} color={theme.colors.text.primary} />
+                <Text style={[
+                  styles.menuText,
+                  { color: theme.colors.text.primary },
+                ]}>
                   Privacy & Policy
                 </Text>
               </TouchableOpacity>
-
+              
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => handleProfileMenuOption("terms")}
               >
-                <Ionicons
-                  name="document-text-outline"
-                  size={20}
-                  color={theme.colors.text.primary}
-                />
-                <Text
-                  style={[
-                    styles.menuText,
-                    { color: theme.colors.text.primary },
-                  ]}
-                >
+                <Ionicons name="document-text-outline" size={20} color={theme.colors.text.primary} />
+                <Text style={[
+                  styles.menuText,
+                  { color: theme.colors.text.primary },
+                ]}>
                   Terms of Use
                 </Text>
               </TouchableOpacity>
-
+              
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => handleProfileMenuOption("liked")}
               >
-                <Ionicons
-                  name="heart-outline"
-                  size={20}
-                  color={theme.colors.text.primary}
-                />
-                <Text
-                  style={[
-                    styles.menuText,
-                    { color: theme.colors.text.primary },
-                  ]}
-                >
+                <Ionicons name="heart-outline" size={20} color={theme.colors.text.primary} />
+                <Text style={[
+                  styles.menuText,
+                  { color: theme.colors.text.primary },
+                ]}>
                   Liked Recipes
                 </Text>
               </TouchableOpacity>
-
+              
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => handleProfileMenuOption("saved")}
               >
-                <Ionicons
-                  name="bookmark-outline"
-                  size={20}
-                  color={theme.colors.text.primary}
-                />
-                <Text
-                  style={[
-                    styles.menuText,
-                    { color: theme.colors.text.primary },
-                  ]}
-                >
+                <Ionicons name="bookmark-outline" size={20} color={theme.colors.text.primary} />
+                <Text style={[
+                  styles.menuText,
+                  { color: theme.colors.text.primary },
+                ]}>
                   Saved Recipes
                 </Text>
               </TouchableOpacity>
-
-              <View
-                style={[
-                  styles.menuDivider,
-                  { backgroundColor: theme.colors.border },
-                ]}
-              />
-
+              
+              <View style={[
+                styles.menuDivider,
+                { backgroundColor: theme.colors.border },
+              ]} />
+              
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => handleProfileMenuOption("logout")}
               >
-                <Ionicons
-                  name="log-out-outline"
-                  size={20}
-                  color={theme.colors.text.primary}
-                />
-                <Text
-                  style={[
-                    styles.menuText,
-                    { color: theme.colors.text.primary },
-                  ]}
-                >
+                <Ionicons name="log-out-outline" size={20} color={theme.colors.text.primary} />
+                <Text style={[
+                  styles.menuText,
+                  { color: theme.colors.text.primary },
+                ]}>
                   Log out
                 </Text>
               </TouchableOpacity>
-
+              
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => handleProfileMenuOption("delete")}
               >
-                <Ionicons
-                  name="trash-outline"
-                  size={20}
-                  color="#FF4444"
-                />
-                <Text
-                  style={[
-                    styles.menuText,
-                    { color: "#FF4444" },
-                  ]}
-                >
+                <Ionicons name="trash-outline" size={20} color="#FF4444" />
+                <Text style={[
+                  styles.menuText,
+                  { color: "#FF4444" },
+                ]}>
                   Delete account
                 </Text>
               </TouchableOpacity>
@@ -518,30 +475,22 @@ case "logout":
         activeOpacity={1}
         onPress={() => setShowCountrySelector(false)}
       >
-        <View
-          style={[
-            styles.countrySelector,
-            {
-              backgroundColor: theme.colors.background.secondary,
-              borderColor: theme.colors.border,
-            },
-          ]}
-        >
+        <View style={[
+          styles.countrySelector,
+          {
+            backgroundColor: theme.colors.background.secondary,
+            borderColor: theme.colors.border,
+          },
+        ]}>
           <View style={styles.countrySelectorHeader}>
-            <Text
-              style={[
-                styles.countrySelectorTitle,
-                { color: theme.colors.text.primary },
-              ]}
-            >
+            <Text style={[
+              styles.countrySelectorTitle,
+              { color: theme.colors.text.primary },
+            ]}>
               Select Cuisine
             </Text>
             <TouchableOpacity onPress={() => setShowCountrySelector(false)}>
-              <Ionicons
-                name="close"
-                size={24}
-                color={theme.colors.text.primary}
-              />
+              <Ionicons name="close" size={24} color={theme.colors.text.primary} />
             </TouchableOpacity>
           </View>
           <ScrollView style={styles.countryList}>
@@ -551,34 +500,26 @@ case "logout":
                 style={[
                   styles.countryItem,
                   {
-                    backgroundColor:
-                      selectedCountry.code === country.code
-                        ? theme.colors.accent.primary + "15"
-                        : "transparent",
+                    backgroundColor: selectedCountry.code === country.code
+                      ? theme.colors.accent.primary + "15"
+                      : "transparent",
                   },
                 ]}
                 onPress={() => handleCountrySelect(country)}
               >
                 <Text style={styles.countryFlag}>{country.flag}</Text>
-                <Text
-                  style={[
-                    styles.countryName,
-                    {
-                      color:
-                        selectedCountry.code === country.code
-                          ? theme.colors.accent.primary
-                          : theme.colors.text.primary,
-                    },
-                  ]}
-                >
+                <Text style={[
+                  styles.countryName,
+                  {
+                    color: selectedCountry.code === country.code
+                      ? theme.colors.accent.primary
+                      : theme.colors.text.primary,
+                  },
+                ]}>
                   {country.name}
                 </Text>
                 {selectedCountry.code === country.code && (
-                  <Ionicons
-                    name="checkmark"
-                    size={20}
-                    color={theme.colors.accent.primary}
-                  />
+                  <Ionicons name="checkmark" size={20} color={theme.colors.accent.primary} />
                 )}
               </TouchableOpacity>
             ))}
@@ -600,30 +541,22 @@ case "logout":
         activeOpacity={1}
         onPress={() => setShowModeSelector(false)}
       >
-        <View
-          style={[
-            styles.modeSelectorModal,
-            {
-              backgroundColor: theme.colors.background.secondary,
-              borderColor: theme.colors.border,
-            },
-          ]}
-        >
+        <View style={[
+          styles.modeSelectorModal,
+          {
+            backgroundColor: theme.colors.background.secondary,
+            borderColor: theme.colors.border,
+          },
+        ]}>
           <View style={styles.modeSelectorHeader}>
-            <Text
-              style={[
-                styles.modeSelectorTitle,
-                { color: theme.colors.text.primary },
-              ]}
-            >
+            <Text style={[
+              styles.modeSelectorTitle,
+              { color: theme.colors.text.primary },
+            ]}>
               Select Mode
             </Text>
             <TouchableOpacity onPress={() => setShowModeSelector(false)}>
-              <Ionicons
-                name="close"
-                size={24}
-                color={theme.colors.text.primary}
-              />
+              <Ionicons name="close" size={24} color={theme.colors.text.primary} />
             </TouchableOpacity>
           </View>
           <ScrollView style={styles.modeList}>
@@ -644,46 +577,28 @@ case "logout":
                   ]}
                   onPress={() => handleModeSelect(mode)}
                 >
-                  <Ionicons
-                    name={mode.icon as any}
-                    size={24}
-                    color={mode.color}
-                  />
+                  <Ionicons name={mode.icon as any} size={24} color={mode.color} />
                   <View style={styles.modeContent}>
-                    <Text
-                      style={[
-                        styles.modeName,
-                        {
-                          color: mode.color,
-                        },
-                      ]}
-                    >
+                    <Text style={[
+                      styles.modeName,
+                      { color: mode.color },
+                    ]}>
                       {mode.name}
                     </Text>
                     {mode.isPro && (
-                      <View
-                        style={[
-                          styles.proBadge,
-                          { backgroundColor: mode.color },
-                        ]}
-                      >
+                      <View style={[
+                        styles.proBadge,
+                        { backgroundColor: mode.color },
+                      ]}>
                         <Text style={styles.proText}>PRO</Text>
                       </View>
                     )}
                   </View>
                   {isSelected && (
-                    <Ionicons
-                      name="checkmark"
-                      size={20}
-                      color={mode.color}
-                    />
+                    <Ionicons name="checkmark" size={20} color={mode.color} />
                   )}
                   {isDisabled && (
-                    <Ionicons
-                      name="lock-closed"
-                      size={16}
-                      color={theme.colors.text.secondary}
-                    />
+                    <Ionicons name="lock-closed" size={16} color={theme.colors.text.secondary} />
                   )}
                 </TouchableOpacity>
               );
@@ -702,41 +617,26 @@ case "logout":
           style={styles.notificationButton}
           onPress={() => alert('Coming soon')}
         >
-          <Ionicons
-            name="notifications-outline"
-            size={28}
-            color={theme.colors.text.primary}
-          />
+          <Ionicons name="notifications-outline" size={28} color={theme.colors.text.primary} />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.profileButton}
           onPress={() => setShowProfileMenu(true)}
         >
-          <Ionicons
-            name="person-circle-outline"
-            size={28}
-            color={theme.colors.text.primary}
-          />
+          <Ionicons name="person-circle-outline" size={28} color={theme.colors.text.primary} />
         </TouchableOpacity>
       </View>
 
       {/* Search Input Section with Country Selector */}
       <View style={styles.searchSection}>
-        <View
-          style={[
-            styles.searchContainer,
-            {
-              backgroundColor: theme.colors.background.secondary,
-              borderColor: theme.colors.border,
-            },
-          ]}
-        >
-          <Ionicons
-            name="search"
-            size={20}
-            color={theme.colors.text.secondary}
-            style={styles.searchIcon}
-          />
+        <View style={[
+          styles.searchContainer,
+          {
+            backgroundColor: theme.colors.background.secondary,
+            borderColor: theme.colors.border,
+          },
+        ]}>
+          <Ionicons name="search" size={20} color={theme.colors.text.secondary} style={styles.searchIcon} />
           <TextInput
             style={[styles.searchInput, { color: theme.colors.text.primary }]}
             placeholder="Enter ingredients..."
@@ -746,45 +646,26 @@ case "logout":
             onSubmitEditing={handleAddIngredient}
             returnKeyType="done"
           />
-
           <TouchableOpacity
             style={[styles.countryButton, { borderColor: theme.colors.border }]}
             onPress={() => setShowCountrySelector(true)}
           >
             <Text style={styles.countryFlag}>{selectedCountry.flag}</Text>
-            <Ionicons
-              name="chevron-down"
-              size={16}
-              color={theme.colors.text.secondary}
-            />
+            <Ionicons name="chevron-down" size={16} color={theme.colors.text.secondary} />
           </TouchableOpacity>
-
           {searchText.length > 0 && (
-            <TouchableOpacity
-              onPress={handleAddIngredient}
-              style={styles.addButton}
-            >
-              <Ionicons
-                name="add-circle"
-                size={24}
-                color={theme.colors.accent.primary}
-              />
+            <TouchableOpacity onPress={handleAddIngredient} style={styles.addButton}>
+              <Ionicons name="add-circle" size={24} color={theme.colors.accent.primary} />
             </TouchableOpacity>
           )}
         </View>
       </View>
 
       {/* Ingredients List */}
-      <ScrollView
-        style={styles.ingredientsSection}
-        showsVerticalScrollIndicator={false}
-      >
-        <Text
-          style={[styles.sectionTitle, { color: theme.colors.text.primary }]}
-        >
+      <ScrollView style={styles.ingredientsSection} showsVerticalScrollIndicator={false}>
+        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
           Your Ingredients ({ingredients.length})
         </Text>
-
         <View style={styles.ingredientsContainer}>
           {ingredients.map((ingredient, index) => (
             <View
@@ -797,40 +678,27 @@ case "logout":
                 },
               ]}
             >
-              <Text
-                style={[
-                  styles.ingredientText,
-                  { color: theme.colors.accent.primary },
-                ]}
-              >
+              <Text style={[
+                styles.ingredientText,
+                { color: theme.colors.accent.primary },
+              ]}>
                 {ingredient}
               </Text>
               <TouchableOpacity
                 onPress={() => handleRemoveIngredient(ingredient)}
                 style={styles.removeButton}
               >
-                <Ionicons
-                  name="close-circle"
-                  size={18}
-                  color={theme.colors.accent.primary}
-                />
+                <Ionicons name="close-circle" size={18} color={theme.colors.accent.primary} />
               </TouchableOpacity>
             </View>
           ))}
-
           {ingredients.length === 0 && (
             <View style={styles.emptyState}>
-              <Ionicons
-                name="restaurant-outline"
-                size={48}
-                color={theme.colors.text.secondary}
-              />
-              <Text
-                style={[
-                  styles.emptyText,
-                  { color: theme.colors.text.secondary },
-                ]}
-              >
+              <Ionicons name="restaurant-outline" size={48} color={theme.colors.text.secondary} />
+              <Text style={[
+                styles.emptyText,
+                { color: theme.colors.text.secondary },
+              ]}>
                 Add ingredients to find amazing dishes from{" "}
                 {selectedCountry.name.toLowerCase()} cuisine!
               </Text>
@@ -841,9 +709,7 @@ case "logout":
 
       {/* Mode Selection */}
       <View style={styles.modeSection}>
-        <Text
-          style={[styles.sectionTitle, { color: theme.colors.text.primary }]}
-        >
+        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
           Mode
         </Text>
         <TouchableOpacity
@@ -857,49 +723,44 @@ case "logout":
           onPress={() => setShowModeSelector(true)}
         >
           <View style={styles.selectedModeContent}>
-            <Ionicons
-              name={selectedMode.icon as any}
-              size={20}
-              color={selectedMode.color}
-            />
-            <Text
-              style={[
-                styles.selectedModeText,
-                { color: selectedMode.color },
-              ]}
-            >
+            <Ionicons name={selectedMode.icon as any} size={20} color={selectedMode.color} />
+            <Text style={[
+              styles.selectedModeText,
+              { color: selectedMode.color },
+            ]}>
               {selectedMode.name}
             </Text>
             {selectedMode.isPro && (
-              <View
-                style={[
-                  styles.proBadgeSmall,
-                  { backgroundColor: selectedMode.color },
-                ]}
-              >
+              <View style={[
+                styles.proBadgeSmall,
+                { backgroundColor: selectedMode.color },
+              ]}>
                 <Text style={styles.proTextSmall}>PRO</Text>
               </View>
             )}
           </View>
-          <Ionicons
-            name="chevron-down"
-            size={20}
-            color={selectedMode.color}
-          />
+          <Ionicons name="chevron-down" size={20} color={selectedMode.color} />
         </TouchableOpacity>
       </View>
 
       {/* Find Dishes Button */}
       <View style={styles.buttonSection}>
         <Button
-          title="Find Dishes"
+          title={isLoading ? "Finding Dishes..." : "Find Dishes"}
           onPress={handleFindDishes}
           style={{
             ...styles.findButton,
-            opacity: ingredients.length > 0 ? 1 : 0.5,
+            opacity: (ingredients.length > 0 && !isLoading) ? 1 : 0.5,
           }}
-          disabled={ingredients.length === 0}
+          disabled={ingredients.length === 0 || isLoading}
         />
+        {isLoading && (
+          <ActivityIndicator
+            size="small"
+            color={theme.colors.accent.primary}
+            style={styles.loadingIndicator}
+          />
+        )}
       </View>
 
       <ProfileMenu />
@@ -1046,6 +907,9 @@ const styles = StyleSheet.create({
   },
   findButton: {
     width: "100%",
+  },
+  loadingIndicator: {
+    marginTop: 10,
   },
   modalOverlay: {
     flex: 1,
