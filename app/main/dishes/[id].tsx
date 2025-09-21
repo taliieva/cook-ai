@@ -19,17 +19,12 @@ import {
 
 const { width, height } = Dimensions.get('window');
 
-// Define types for our dish data
+// Define types for our dish data matching the actual API response
 interface DishDetail {
   id: number;
   name: string;
   culture: string;
   image: string;
-  description: string;
-  prepTime: string;
-  servings: string;
-  difficulty: string;
-  rating: number;
   calories: number;
   outdoorCost: number;
   homeCost: number;
@@ -167,19 +162,19 @@ export default function DishDetailScreen() {
     return 'Hard';
   };
 
-  const getServingsEstimate = (culture: string): string => {
-    // Simple estimation based on culture
-    const servingMap: { [key: string]: string } = {
-      'Italian': '4 people',
-      'Chinese': '3-4 people',
-      'Indian': '4-5 people',
-      'Mexican': '4 people',
-      'American': '2-3 people',
-      'Japanese': '2 people',
-      'Thai': '3 people',
-      'French': '4 people'
-    };
-    return servingMap[culture] || '3-4 people';
+  const getServingsEstimate = (portionSize: string): string => {
+    // Convert API's EstimatedPortionSize to servings
+    if (portionSize && typeof portionSize === 'string') {
+      const size = portionSize.toLowerCase();
+      if (size.includes('large')) {
+        return '4-6 people';
+      } else if (size.includes('medium')) {
+        return '3-4 people';
+      } else if (size.includes('small')) {
+        return '1-2 people';
+      }
+    }
+    return '2-3 people';
   };
 
   const generateRating = (culture: string, dishType: string): number => {
@@ -276,7 +271,7 @@ export default function DishDetailScreen() {
     );
   };
 
-  // Don't render until we have dish data
+      // Don't render until we have dish data
   if (!dishData) {
     return (
       <View style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
@@ -288,10 +283,6 @@ export default function DishDetailScreen() {
       </View>
     );
   }
-
-  const displayRating = generateRating(dishData.culture, dishData.dishType);
-  const displayServings = getServingsEstimate(dishData.culture);
-  const displayDifficulty = getDifficultyFromSteps(dishData.steps);
 
   return (
     <View style={styles.container}>
@@ -362,23 +353,15 @@ export default function DishDetailScreen() {
             {/* Dish Name */}
             <Text style={styles.dishName}>{dishData.name}</Text>
 
-            {/* Rating and Info */}
+            {/* Rating and Info - REMOVED: Only show actual data */}
             <View style={styles.infoRow}>
               <View style={styles.infoItem}>
-                <Ionicons name="star" size={16} color="#FFD60A" />
-                <Text style={styles.infoText}>{displayRating}</Text>
+                <Ionicons name="restaurant-outline" size={16} color="#FFFFFF" />
+                <Text style={styles.infoText}>{dishData.dishType}</Text>
               </View>
               <View style={styles.infoItem}>
-                <Ionicons name="time-outline" size={16} color="#FFFFFF" />
-                <Text style={styles.infoText}>{dishData.prepTime}</Text>
-              </View>
-              <View style={styles.infoItem}>
-                <Ionicons name="people-outline" size={16} color="#FFFFFF" />
-                <Text style={styles.infoText}>{displayServings}</Text>
-              </View>
-              <View style={styles.infoItem}>
-                <Ionicons name="bar-chart-outline" size={16} color="#FFFFFF" />
-                <Text style={styles.infoText}>{displayDifficulty}</Text>
+                <Ionicons name="globe-outline" size={16} color="#FFFFFF" />
+                <Text style={styles.infoText}>{dishData.culture}</Text>
               </View>
             </View>
 
@@ -406,8 +389,8 @@ export default function DishDetailScreen() {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>About this dish</Text>
               <Text style={styles.description}>
-                {dishData.shortDescription || dishData.description || 
-                 `This delicious ${dishData.culture.toLowerCase()} ${dishData.dishType.toLowerCase()} is perfect for any occasion. Made with fresh ingredients and traditional techniques, it brings authentic flavors to your table.`}
+                {dishData.shortDescription || 
+                 `This delicious ${dishData.culture} ${dishData.dishType.toLowerCase()} is perfect for any occasion. Made with fresh ingredients and traditional techniques, it brings authentic flavors to your table.`}
               </Text>
             </View>
 

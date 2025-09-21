@@ -23,8 +23,8 @@ export default function ChooseIngredientsScreen() {
   const theme = useTheme();
 
   const handleNext = () => {
-    // router.push('/questions/CookingExperienceScreen');
-    router.push('/onboarding/app-insight');
+    router.push('/questions/CookingExperienceScreen');
+    // router.push('/onboarding/app-insight');
   };
 
   return (
