@@ -1,10 +1,9 @@
 import { useTheme } from "@/hooks/useTheme";
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Dimensions,
-  ImageBackground,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -16,301 +15,542 @@ import {
 
 const { width } = Dimensions.get("window");
 
-// Mock data for analytics
-const mockData = {
+// Mock data for insights
+const mockInsightsData = {
+  userActions: [
+    { action: "AI Searches", count: 247, trend: "+24%", icon: "✨" },
+    { action: "Recipes Cooked", count: 89, trend: "+18%", icon: "👨‍🍳" },
+    { action: "Favorites Added", count: 34, trend: "+31%", icon: "❤️" },
+    { action: "Cooking Streak", count: 12, trend: "+12%", icon: "🔥" },
+  ],
   popularCuisines: [
     {
       name: "Italian",
-      searches: 1247,
-      percentage: 28,
+      searches: 45,
+      percentage: 35,
       trend: "+12%",
       icon: "🇮🇹",
     },
-    { name: "Asian", searches: 986, percentage: 22, trend: "+8%", icon: "🥢" },
-    {
-      name: "Mexican",
-      searches: 743,
-      percentage: 17,
-      trend: "+15%",
-      icon: "🌮",
+    { 
+      name: "Mexican", 
+      searches: 32, 
+      percentage: 25, 
+      trend: "+8%", 
+      icon: "🇲🇽" 
     },
     {
-      name: "Mediterranean",
-      searches: 621,
+      name: "Japanese",
+      searches: 28,
+      percentage: 22,
+      trend: "+15%",
+      icon: "🇯🇵",
+    },
+    {
+      name: "Indian",
+      searches: 18,
       percentage: 14,
       trend: "+5%",
-      icon: "🫒",
+      icon: "🇮🇳",
     },
     {
       name: "American",
-      searches: 512,
-      percentage: 12,
+      searches: 12,
+      percentage: 9,
       trend: "+3%",
-      icon: "🍔",
+      icon: "🇺🇸",
     },
-    { name: "Indian", searches: 298, percentage: 7, trend: "+18%", icon: "🍛" },
-  ],
-  userActions: [
-    { action: "Recipe Views", count: 4521, trend: "+24%", icon: "👁️" },
-    { action: "Favorites Added", count: 1834, trend: "+18%", icon: "❤️" },
-    { action: "Recipes Cooked", count: 967, trend: "+31%", icon: "👨‍🍳" },
-    { action: "Shopping Lists", count: 623, trend: "+12%", icon: "🛒" },
   ],
   weeklyStats: [
-    { day: "Mon", value: 45 },
-    { day: "Tue", value: 62 },
-    { day: "Wed", value: 38 },
-    { day: "Thu", value: 71 },
-    { day: "Fri", value: 84 },
-    { day: "Sat", value: 92 },
-    { day: "Sun", value: 67 },
+    { day: "Mon", value: 8 },
+    { day: "Tue", value: 12 },
+    { day: "Wed", value: 6 },
+    { day: "Thu", value: 15 },
+    { day: "Fri", value: 10 },
+    { day: "Sat", value: 18 },
+    { day: "Sun", value: 14 },
   ],
+  achievements: [
+    { 
+      id: 1, 
+      title: "Recipe Explorer", 
+      description: "Tried 50+ recipes", 
+      icon: "🏆", 
+      unlocked: true,
+    },
+    { 
+      id: 2, 
+      title: "Cuisine Master", 
+      description: "5+ cuisines explored", 
+      icon: "🥇", 
+      unlocked: true,
+    },
+    { 
+      id: 3, 
+      title: "Cooking Streak", 
+      description: "10 days streak", 
+      icon: "🔥", 
+      unlocked: true,
+    },
+    { 
+      id: 4, 
+      title: "AI Chef Pro", 
+      description: "100+ AI searches", 
+      icon: "⚡", 
+      unlocked: false,
+    },
+  ],
+  recentActivity: [
+    {
+      id: 1,
+      type: "search",
+      title: "Searched for pasta recipes",
+      cuisine: "Italian",
+      time: "2 hours ago",
+      ingredients: ["pasta", "tomatoes", "basil"]
+    },
+    {
+      id: 2,
+      type: "favorite",
+      title: "Added Chicken Tacos to favorites",
+      cuisine: "Mexican",
+      time: "1 day ago",
+      ingredients: ["chicken", "tortillas", "avocado"]
+    },
+    {
+      id: 3,
+      type: "cooked",
+      title: "Marked Sushi Rolls as cooked",
+      cuisine: "Japanese",
+      time: "2 days ago",
+      ingredients: ["rice", "nori", "salmon"]
+    },
+  ]
 };
 
-const StatCard = ({ title, value, trend, icon, isLarge = false }) => (
-  <View style={[styles.statCard, isLarge && styles.largeStatCard]}>
-    <LinearGradient
-      colors={["rgba(255, 255, 255, 0.15)", "rgba(255, 255, 255, 0.05)"]}
-      style={styles.statCardGradient}
-    >
-      <View style={styles.statHeader}>
-        <Text style={styles.statIcon}>{icon}</Text>
-        {trend && (
-          <View style={styles.trendContainer}>
-            <Text
-              style={[
-                styles.trendText,
-                trend.startsWith("+")
-                  ? styles.trendPositive
-                  : styles.trendNegative,
-              ]}
-            >
-              {trend}
-            </Text>
-          </View>
-        )}
-      </View>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statTitle}>{title}</Text>
-    </LinearGradient>
-  </View>
-);
-
-const CuisineCard = ({ cuisine, rank }) => {
-  const barWidth = (cuisine.percentage / 100) * 200;
-  return (
-    <View style={styles.cuisineCard}>
-      <LinearGradient
-        colors={["rgba(255, 255, 255, 0.1)", "rgba(255, 255, 255, 0.05)"]}
-        style={styles.cuisineCardGradient}
-      >
-        <View style={styles.cuisineHeader}>
-          <View style={styles.cuisineInfo}>
-            <Text style={styles.cuisineRank}>#{rank}</Text>
-            <Text style={styles.cuisineIcon}>{cuisine.icon}</Text>
-            <View style={styles.cuisineTextContainer}>
-              <Text style={styles.cuisineName}>{cuisine.name}</Text>
-              <Text style={styles.cuisineSearches}>
-                {cuisine.searches} searches
-              </Text>
-            </View>
-          </View>
-          <View style={styles.cuisineTrend}>
-            <Text style={styles.cuisinePercentage}>{cuisine.percentage}%</Text>
-            <Text
-              style={[
-                styles.cuisineTrendText,
-                cuisine.trend.startsWith("+")
-                  ? styles.trendPositive
-                  : styles.trendNegative,
-              ]}
-            >
-              {cuisine.trend}
-            </Text>
-          </View>
-        </View>
-        <View style={styles.progressBarContainer}>
-          <View style={styles.progressBarBackground}>
-            <LinearGradient
-              colors={["#FF6B6B", "#FF8E53"]}
-              style={[styles.progressBar, { width: barWidth }]}
-            />
-          </View>
-        </View>
-      </LinearGradient>
-    </View>
-  );
-};
-
-const WeeklyChart = ({ data }) => {
-  const maxValue = Math.max(...data.map((item) => item.value));
-  return (
-    <View style={styles.chartContainer}>
-      <LinearGradient
-        colors={["rgba(255, 255, 255, 0.1)", "rgba(255, 255, 255, 0.05)"]}
-        style={styles.chartGradient}
-      >
-        <Text style={styles.chartTitle}>Weekly Activity</Text>
-        <View style={styles.chartContent}>
-          {data.map((item, index) => {
-            const barHeight = (item.value / maxValue) * 100;
-            return (
-              <View key={index} style={styles.chartBar}>
-                <View style={styles.barContainer}>
-                  <LinearGradient
-                    colors={["#FF6B6B", "#FF8E53"]}
-                    style={[styles.bar, { height: barHeight }]}
-                  />
-                </View>
-                <Text style={styles.chartDay}>{item.day}</Text>
-                <Text style={styles.chartValue}>{item.value}</Text>
-              </View>
-            );
-          })}
-        </View>
-      </LinearGradient>
-    </View>
-  );
-};
-
-export default function AppInsightsScreen() {
+export default function InsightsComponent({ userPlan, onUpgrade, onSearchAgain }) {
   const theme = useTheme();
   const [selectedPeriod, setSelectedPeriod] = useState("week");
-  const router = useRouter();
-  return (
-    <View style={styles.container}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor="transparent"
-        translucent
-      />
-      <ImageBackground
-        source={{
-          uri: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
-        }}
-        style={styles.backgroundImage}
-        resizeMode="cover"
-      >
-        <LinearGradient
-          colors={["rgba(0,0,0,0.7)", "rgba(0,0,0,0.5)", "rgba(0,0,0,0.8)"]}
-          style={styles.overlay}
-        />
+  const [data] = useState(mockInsightsData);
 
-        <SafeAreaView style={styles.safeArea}>
-          <ScrollView
-            style={styles.scrollView}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{
-              paddingBottom: 120,
-              paddingHorizontal: 20,
-            }}
-          >
-            <View style={styles.header}>
-              <Text style={styles.headerTitle}>App Insights</Text>
-              <Text style={styles.headerSubtitle}>
-                Track your cooking journey
+  const StatCard = ({ title, value, trend, icon }) => (
+    <View style={styles.statCard}>
+      <LinearGradient
+        colors={theme.isDark 
+          ? ["rgba(255, 255, 255, 0.08)", "rgba(255, 255, 255, 0.03)"]
+          : ["rgba(255, 255, 255, 0.9)", "rgba(255, 255, 255, 0.6)"]
+        }
+        style={[
+          styles.statCardGradient,
+          { 
+            borderColor: theme.isDark 
+              ? "rgba(255,255,255,0.1)" 
+              : "rgba(0,0,0,0.05)",
+          }
+        ]}
+      >
+        <View style={styles.statHeader}>
+          <Text style={styles.statIcon}>{icon}</Text>
+          {trend && (
+            <View style={[
+              styles.trendContainer,
+              { backgroundColor: theme.isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)" }
+            ]}>
+              <Text
+                style={[
+                  styles.trendText,
+                  trend.startsWith("+") ? styles.trendPositive : styles.trendNegative,
+                ]}
+              >
+                {trend}
               </Text>
             </View>
+          )}
+        </View>
+        <Text style={[styles.statValue, { color: theme.colors.text.primary }]}>
+          {typeof value === 'number' ? value.toLocaleString() : value}
+        </Text>
+        <Text style={[styles.statTitle, { color: theme.colors.text.secondary }]}>
+          {title}
+        </Text>
+      </LinearGradient>
+    </View>
+  );
 
-            <View style={styles.periodSelector}>
-              {["week", "month", "year"].map((period) => (
-                <TouchableOpacity
-                  key={period}
-                  style={[
-                    styles.periodButton,
-                    selectedPeriod === period && styles.periodButtonActive,
-                  ]}
-                  onPress={() => setSelectedPeriod(period)}
-                >
-                  <Text
-                    style={[
-                      styles.periodButtonText,
-                      selectedPeriod === period &&
-                        styles.periodButtonTextActive,
-                    ]}
-                  >
-                    {period.charAt(0).toUpperCase() + period.slice(1)}
+  const CuisineCard = ({ cuisine, rank }) => {
+    const barWidth = (cuisine.percentage / 100) * 120;
+    return (
+      <View style={styles.cuisineCard}>
+        <LinearGradient
+          colors={theme.isDark 
+            ? ["rgba(255, 255, 255, 0.08)", "rgba(255, 255, 255, 0.03)"]
+            : ["rgba(255, 255, 255, 0.9)", "rgba(255, 255, 255, 0.6)"]
+          }
+          style={[
+            styles.cuisineCardGradient,
+            { 
+              borderColor: theme.isDark 
+                ? "rgba(255,255,255,0.1)" 
+                : "rgba(0,0,0,0.05)",
+            }
+          ]}
+        >
+          <View style={styles.cuisineHeader}>
+            <View style={styles.cuisineInfo}>
+              <Text style={[styles.cuisineRank, { color: "#007AFF" }]}>#{rank}</Text>
+              <Text style={styles.cuisineIcon}>{cuisine.icon}</Text>
+              <View style={styles.cuisineTextContainer}>
+                <Text style={[styles.cuisineName, { color: theme.colors.text.primary }]}>
+                  {cuisine.name}
+                </Text>
+                <Text style={[styles.cuisineSearches, { color: theme.colors.text.secondary }]}>
+                  {cuisine.searches} recipes
+                </Text>
+              </View>
+            </View>
+            <View style={styles.cuisineTrend}>
+              <Text style={[styles.cuisinePercentage, { color: theme.colors.text.primary }]}>
+                {cuisine.percentage}%
+              </Text>
+              <Text
+                style={[
+                  styles.cuisineTrendText,
+                  cuisine.trend.startsWith("+") ? styles.trendPositive : styles.trendNegative,
+                ]}
+              >
+                {cuisine.trend}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.progressBarContainer}>
+            <View style={[
+              styles.progressBarBackground,
+              { backgroundColor: theme.isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }
+            ]}>
+              <LinearGradient
+                colors={["#007AFF", "#0051D5"]}
+                style={[styles.progressBar, { width: barWidth }]}
+              />
+            </View>
+          </View>
+        </LinearGradient>
+      </View>
+    );
+  };
+
+  const WeeklyChart = ({ data }) => {
+    const maxValue = Math.max(...data.map((item) => item.value));
+    return (
+      <View style={styles.chartContainer}>
+        <LinearGradient
+          colors={theme.isDark 
+            ? ["rgba(255, 255, 255, 0.08)", "rgba(255, 255, 255, 0.03)"]
+            : ["rgba(255, 255, 255, 0.9)", "rgba(255, 255, 255, 0.6)"]
+          }
+          style={[
+            styles.chartGradient,
+            { 
+              borderColor: theme.isDark 
+                ? "rgba(255,255,255,0.1)" 
+                : "rgba(0,0,0,0.05)",
+            }
+          ]}
+        >
+          <Text style={[styles.chartTitle, { color: theme.colors.text.primary }]}>
+            Weekly Activity
+          </Text>
+          <View style={styles.chartContent}>
+            {data.map((item, index) => {
+              const barHeight = (item.value / maxValue) * 100;
+              return (
+                <View key={index} style={styles.chartBar}>
+                  <View style={styles.barContainer}>
+                    <LinearGradient
+                      colors={["#007AFF", "#0051D5"]}
+                      style={[styles.bar, { height: `${barHeight}%` }]}
+                    />
+                  </View>
+                  <Text style={[styles.chartDay, { color: theme.colors.text.secondary }]}>
+                    {item.day}
                   </Text>
-                </TouchableOpacity>
+                  <Text style={[styles.chartValue, { color: theme.colors.text.primary }]}>
+                    {item.value}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        </LinearGradient>
+      </View>
+    );
+  };
+
+  const AchievementCard = ({ achievement }) => (
+    <View style={[
+      styles.achievementCard,
+      { opacity: achievement.unlocked ? 1 : 0.6 }
+    ]}>
+      <LinearGradient
+        colors={achievement.unlocked 
+          ? theme.isDark 
+            ? ["rgba(255, 255, 255, 0.12)", "rgba(255, 255, 255, 0.06)"]
+            : ["rgba(255, 255, 255, 0.95)", "rgba(255, 255, 255, 0.8)"]
+          : theme.isDark 
+            ? ["rgba(255, 255, 255, 0.05)", "rgba(255, 255, 255, 0.02)"]
+            : ["rgba(255, 255, 255, 0.6)", "rgba(255, 255, 255, 0.4)"]
+        }
+        style={[
+          styles.achievementGradient,
+          { 
+            borderColor: theme.isDark 
+              ? "rgba(255,255,255,0.1)" 
+              : "rgba(0,0,0,0.05)",
+          }
+        ]}
+      >
+        <Text style={styles.achievementIcon}>{achievement.icon}</Text>
+        <Text style={[styles.achievementTitle, { color: theme.colors.text.primary }]}>
+          {achievement.title}
+        </Text>
+        <Text style={[styles.achievementDescription, { color: theme.colors.text.secondary }]}>
+          {achievement.description}
+        </Text>
+        {achievement.unlocked && (
+          <View style={styles.unlockedBadge}>
+            <Text style={styles.unlockedText}>Unlocked</Text>
+          </View>
+        )}
+      </LinearGradient>
+    </View>
+  );
+
+  const RecentActivityCard = ({ activity }) => (
+    <TouchableOpacity 
+      style={styles.activityCard}
+      onPress={() => onSearchAgain && onSearchAgain(activity.ingredients, activity.cuisine)}
+      activeOpacity={0.8}
+    >
+      <LinearGradient
+        colors={theme.isDark 
+          ? ["rgba(255, 255, 255, 0.08)", "rgba(255, 255, 255, 0.03)"]
+          : ["rgba(255, 255, 255, 0.9)", "rgba(255, 255, 255, 0.6)"]
+        }
+        style={[
+          styles.activityGradient,
+          { 
+            borderColor: theme.isDark 
+              ? "rgba(255,255,255,0.1)" 
+              : "rgba(0,0,0,0.05)",
+          }
+        ]}
+      >
+        <View style={styles.activityHeader}>
+          <View style={[
+            styles.activityTypeIcon,
+            { 
+              backgroundColor: activity.type === 'search' ? '#007AFF' 
+                : activity.type === 'favorite' ? '#FF3B30' 
+                : '#34C759'
+            }
+          ]}>
+            <Ionicons 
+              name={
+                activity.type === 'search' ? 'search' 
+                : activity.type === 'favorite' ? 'heart' 
+                : 'checkmark'
+              } 
+              size={16} 
+              color="white" 
+            />
+          </View>
+          <Text style={[styles.activityTime, { color: theme.colors.text.secondary }]}>
+            {activity.time}
+          </Text>
+        </View>
+        <Text style={[styles.activityTitle, { color: theme.colors.text.primary }]}>
+          {activity.title}
+        </Text>
+        <Text style={[styles.activityCuisine, { color: theme.colors.text.secondary }]}>
+          {activity.cuisine} cuisine
+        </Text>
+      </LinearGradient>
+    </TouchableOpacity>
+  );
+
+  return (
+    <View style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
+      <StatusBar
+        barStyle={theme.isDark ? "light-content" : "dark-content"}
+        backgroundColor={theme.colors.background.primary}
+      />
+
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>
+              Your Cooking Insights
+            </Text>
+            <Text style={[styles.headerSubtitle, { color: theme.colors.text.secondary }]}>
+              Track your culinary journey and achievements
+            </Text>
+          </View>
+
+          {/* Period Selector */}
+          <View style={[
+            styles.periodSelector,
+            { backgroundColor: theme.isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)" }
+          ]}>
+            {["week", "month", "year"].map((period) => (
+              <TouchableOpacity
+                key={period}
+                style={[
+                  styles.periodButton,
+                  selectedPeriod === period && {
+                    backgroundColor: "#007AFF"
+                  }
+                ]}
+                onPress={() => setSelectedPeriod(period)}
+              >
+                <Text
+                  style={[
+                    styles.periodButtonText,
+                    { color: theme.colors.text.secondary },
+                    selectedPeriod === period && {
+                      color: "#FFFFFF"
+                    }
+                  ]}
+                >
+                  {period.charAt(0).toUpperCase() + period.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Your Activity Stats */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
+              Your Activity
+            </Text>
+            <View style={styles.statsGrid}>
+              {data.userActions.map((action, index) => (
+                <StatCard
+                  key={index}
+                  title={action.action}
+                  value={action.count}
+                  trend={action.trend}
+                  icon={action.icon}
+                />
               ))}
             </View>
-
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Your Activity</Text>
-              <View style={styles.statsGrid}>
-                {mockData.userActions.map((action, index) => (
-                  <StatCard
-                    key={index}
-                    title={action.action}
-                    value={action.count.toLocaleString()}
-                    trend={action.trend}
-                    icon={action.icon}
-                  />
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.section}>
-              <WeeklyChart data={mockData.weeklyStats} />
-            </View>
-
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Most Popular Cuisines</Text>
-              <View style={styles.cuisineList}>
-                {mockData.popularCuisines.map((cuisine, index) => (
-                  <CuisineCard key={index} cuisine={cuisine} rank={index + 1} />
-                ))}
-              </View>
-            </View>
-          </ScrollView>
-
-          {/* Sticky Next Page Button */}
-          <View style={styles.stickyButtonContainer}>
-            <TouchableOpacity
-              style={styles.primaryActionButton}
-              onPress={() => {
-               router.push('/onboarding/ingredients-search')
-              }}
-            >
-              <LinearGradient
-                colors={["#FF6B6B", "#FF8E53"]}
-                style={styles.primaryActionGradient}
-              >
-                <Text style={styles.primaryActionText}>Next</Text>
-              </LinearGradient>
-            </TouchableOpacity>
           </View>
-        </SafeAreaView>
-      </ImageBackground>
+
+          {/* Weekly Chart */}
+          <View style={styles.section}>
+            <WeeklyChart data={data.weeklyStats} />
+          </View>
+
+          {/* Popular Cuisines */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
+              Your Favorite Cuisines
+            </Text>
+            <View style={styles.cuisineList}>
+              {data.popularCuisines.map((cuisine, index) => (
+                <CuisineCard key={index} cuisine={cuisine} rank={index + 1} />
+              ))}
+            </View>
+          </View>
+
+          {/* Achievements */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
+              Achievements
+            </Text>
+            <View style={styles.achievementsGrid}>
+              {data.achievements.map((achievement) => (
+                <AchievementCard key={achievement.id} achievement={achievement} />
+              ))}
+            </View>
+          </View>
+
+          {/* Recent Activity */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
+              Recent Activity
+            </Text>
+            <View style={styles.activityList}>
+              {data.recentActivity.map((activity) => (
+                <RecentActivityCard 
+                  key={activity.id} 
+                  activity={activity}
+                />
+              ))}
+            </View>
+          </View>
+
+          {/* Premium Upgrade CTA */}
+          {/* {userPlan === "free" && (
+            <View style={styles.section}>
+              <TouchableOpacity 
+                style={styles.upgradeCard}
+                onPress={onUpgrade}
+                activeOpacity={0.8}
+              >
+                <LinearGradient
+                  colors={["#007AFF", "#0051D5"]}
+                  style={styles.upgradeGradient}
+                >
+                  <Text style={styles.upgradeIcon}>💎</Text>
+                  <Text style={styles.upgradeTitle}>Unlock Premium Insights</Text>
+                  <Text style={styles.upgradeSubtitle}>
+                    Get detailed analytics, export data, and advanced features
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          )} */}
+        </ScrollView>
+      </SafeAreaView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  backgroundImage: { flex: 1 },
-  overlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
-  safeArea: { flex: 1 },
-  scrollView: { flex: 1 },
-  header: { paddingTop: 20, paddingBottom: 30, alignItems: "center" },
+  container: { 
+    flex: 1 
+  },
+  safeArea: { 
+    flex: 1 
+  },
+  scrollView: { 
+    flex: 1 
+  },
+  scrollContent: {
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+  },
+  header: { 
+    paddingTop: 20, 
+    paddingBottom: 30, 
+    alignItems: "center" 
+  },
   headerTitle: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: "700",
-    color: "#FFFFFF",
     textAlign: "center",
-    textShadowColor: "rgba(0,0,0,0.7)",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 8,
+    marginBottom: 8,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: "rgba(255,255,255,0.8)",
-    marginTop: 8,
     textAlign: "center",
+    opacity: 0.8,
   },
   periodSelector: {
     flexDirection: "row",
-    backgroundColor: "rgba(255,255,255,0.1)",
     borderRadius: 12,
     padding: 4,
     marginBottom: 30,
@@ -321,34 +561,35 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 8,
   },
-  periodButtonActive: { backgroundColor: "rgba(255,107,107,0.8)" },
   periodButtonText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "rgba(255,255,255,0.7)",
   },
-  periodButtonTextActive: { color: "#FFFFFF" },
-  section: { marginBottom: 30 },
+  section: { 
+    marginBottom: 30 
+  },
   sectionTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "700",
-    color: "#FFFFFF",
     marginBottom: 16,
-    textShadowColor: "rgba(0,0,0,0.7)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
   },
   statsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
   },
-  statCard: { width: (width - 50) / 2, marginBottom: 12 },
+  statCard: { 
+    width: (width - 50) / 2, 
+    marginBottom: 12 
+  },
   statCardGradient: {
     padding: 16,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
   },
   statHeader: {
     flexDirection: "row",
@@ -356,30 +597,47 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
-  statIcon: { fontSize: 24 },
+  statIcon: { 
+    fontSize: 24 
+  },
   trendContainer: {
-    backgroundColor: "rgba(255,255,255,0.1)",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
   },
-  trendText: { fontSize: 12, fontWeight: "600" },
-  trendPositive: { color: "#4ADE80" },
-  trendNegative: { color: "#F87171" },
+  trendText: { 
+    fontSize: 12, 
+    fontWeight: "600" 
+  },
+  trendPositive: { 
+    color: "#34C759" 
+  },
+  trendNegative: { 
+    color: "#FF3B30" 
+  },
   statValue: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#FFFFFF",
     marginBottom: 4,
   },
-  statTitle: { fontSize: 14, color: "rgba(255,255,255,0.8)" },
-  cuisineList: { gap: 12 },
-  cuisineCard: { marginBottom: 12 },
+  statTitle: { 
+    fontSize: 14, 
+    opacity: 0.8 
+  },
+  cuisineList: { 
+    gap: 12 
+  },
+  cuisineCard: { 
+    marginBottom: 12 
+  },
   cuisineCardGradient: {
     padding: 16,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.15)",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
   },
   cuisineHeader: {
     flexDirection: "row",
@@ -387,39 +645,69 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
-  cuisineInfo: { flexDirection: "row", alignItems: "center", flex: 1 },
+  cuisineInfo: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    flex: 1 
+  },
   cuisineRank: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#FF6B6B",
     minWidth: 30,
   },
-  cuisineIcon: { fontSize: 20, marginHorizontal: 12 },
-  cuisineTextContainer: { flex: 1 },
-  cuisineName: { fontSize: 18, fontWeight: "600", color: "#FFFFFF" },
-  cuisineSearches: { fontSize: 14, color: "rgba(255,255,255,0.7)" },
-  cuisineTrend: { alignItems: "flex-end" },
-  cuisinePercentage: { fontSize: 18, fontWeight: "700", color: "#FFFFFF" },
-  cuisineTrendText: { fontSize: 12, fontWeight: "600" },
-  progressBarContainer: { marginTop: 8 },
+  cuisineIcon: { 
+    fontSize: 20, 
+    marginHorizontal: 12 
+  },
+  cuisineTextContainer: { 
+    flex: 1 
+  },
+  cuisineName: { 
+    fontSize: 18, 
+    fontWeight: "600" 
+  },
+  cuisineSearches: { 
+    fontSize: 14, 
+    opacity: 0.7 
+  },
+  cuisineTrend: { 
+    alignItems: "flex-end" 
+  },
+  cuisinePercentage: { 
+    fontSize: 18, 
+    fontWeight: "700" 
+  },
+  cuisineTrendText: { 
+    fontSize: 12, 
+    fontWeight: "600" 
+  },
+  progressBarContainer: { 
+    marginTop: 8 
+  },
   progressBarBackground: {
     height: 6,
-    backgroundColor: "rgba(255,255,255,0.2)",
     borderRadius: 3,
     overflow: "hidden",
   },
-  progressBar: { height: "100%", borderRadius: 3 },
-  chartContainer: { marginBottom: 20 },
+  progressBar: { 
+    height: "100%", 
+    borderRadius: 3 
+  },
+  chartContainer: { 
+    marginBottom: 20 
+  },
   chartGradient: {
     padding: 20,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.15)",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
   },
   chartTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#FFFFFF",
     marginBottom: 20,
     textAlign: "center",
   },
@@ -429,35 +717,145 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     height: 120,
   },
-  chartBar: { alignItems: "center", flex: 1 },
+  chartBar: { 
+    alignItems: "center", 
+    flex: 1 
+  },
   barContainer: {
     height: 80,
     width: 20,
     justifyContent: "flex-end",
     marginBottom: 8,
   },
-  bar: { width: "100%", borderRadius: 10 },
-  chartDay: { fontSize: 12, color: "rgba(255,255,255,0.8)", marginBottom: 4 },
-  chartValue: { fontSize: 12, fontWeight: "600", color: "#FFFFFF" },
-  stickyButtonContainer: {
-    position: "absolute",
-    bottom: 20,
-    left: 20,
-    right: 20,
+  bar: { 
+    width: "100%", 
+    borderRadius: 10, 
+    minHeight: 4 
   },
-  primaryActionButton: {
+  chartDay: { 
+    fontSize: 12, 
+    marginBottom: 4, 
+    opacity: 0.7 
+  },
+  chartValue: { 
+    fontSize: 12, 
+    fontWeight: "600" 
+  },
+  achievementsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+  achievementCard: { 
+    width: (width - 50) / 2, 
+    marginBottom: 12 
+  },
+  achievementGradient: {
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: "center",
+    minHeight: 120,
+    justifyContent: "center",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  achievementIcon: { 
+    fontSize: 32, 
+    marginBottom: 8 
+  },
+  achievementTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  achievementDescription: {
+    fontSize: 12,
+    textAlign: "center",
+    opacity: 0.7,
+  },
+  unlockedBadge: {
+    backgroundColor: "#34C759",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: 8,
+  },
+  unlockedText: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: "#FFFFFF",
+  },
+  activityList: { 
+    gap: 12 
+  },
+  activityCard: { 
+    marginBottom: 12 
+  },
+  activityGradient: {
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  activityHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  activityTypeIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  activityTime: {
+    fontSize: 12,
+    opacity: 0.7,
+  },
+  activityTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  activityCuisine: {
+    fontSize: 14,
+    opacity: 0.8,
+  },
+  upgradeCard: {
     borderRadius: 16,
     overflow: "hidden",
-    shadowColor: "#FF6B6B",
+    shadowColor: "#007AFF",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 5,
   },
-  primaryActionGradient: {
-    paddingVertical: 16,
-    paddingHorizontal: 24,
+  upgradeGradient: {
+    padding: 24,
     alignItems: "center",
   },
-  primaryActionText: { fontSize: 18, fontWeight: "700", color: "#FFFFFF" },
+  upgradeIcon: { 
+    fontSize: 32, 
+    marginBottom: 12 
+  },
+  upgradeTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    marginBottom: 8,
+  },
+  upgradeSubtitle: {
+    fontSize: 14,
+    color: "rgba(255, 255, 255, 0.9)",
+    textAlign: "center",
+  },
 });

@@ -208,7 +208,7 @@ export default function SignInScreen() {
         if (data.data.isNewUser) {
           router.push("/onboarding/choose-ingredients");
         } else {
-          router.push("/(tabs)/home"); // Adjust route as needed
+          router.push("/onboarding/ingredients-search"); // Adjust route as needed
         }
       } else {
         throw new Error("Authentication failed");

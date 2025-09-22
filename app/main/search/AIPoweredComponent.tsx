@@ -2,7 +2,8 @@ import { Button } from "@/components/ui/Button";
 import { useTheme } from "@/hooks/useTheme";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import * as SecureStore from "expo-secure-store";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -15,7 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { fetchWithAuth } from "../../../utils/auth"; // Import your auth helper
+import { fetchWithAuth } from "../../../utils/auth";
 
 const { width, height } = Dimensions.get("window");
 
@@ -80,9 +81,50 @@ export default function AIPoweredComponent({
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Mock user state
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  // Dynamic auth state
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userPlan, setUserPlan] = useState("free");
+  const [userInfo, setUserInfo] = useState({
+    displayName: "",
+    email: "",
+    isGuest: true
+  });
+
+  // Check authentication status on component mount
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
+
+  const checkAuthStatus = async () => {
+    try {
+      const accessToken = await SecureStore.getItemAsync("accessToken");
+      const displayName = await SecureStore.getItemAsync("displayName");
+      const userEmail = await SecureStore.getItemAsync("userEmail");
+      
+      if (accessToken && displayName && userEmail) {
+        setIsLoggedIn(true);
+        setUserInfo({
+          displayName,
+          email: userEmail,
+          isGuest: false
+        });
+        
+        // You might want to fetch subscription status from your API here
+        // For now, assuming free plan
+        setUserPlan("free");
+      } else {
+        setIsLoggedIn(false);
+        setUserInfo({
+          displayName: "",
+          email: "",
+          isGuest: true
+        });
+      }
+    } catch (error) {
+      console.error("Error checking auth status:", error);
+      setIsLoggedIn(false);
+    }
+  };
 
   const handleAddIngredient = () => {
     if (searchText.trim() && !ingredients.includes(searchText.trim())) {
@@ -90,8 +132,6 @@ export default function AIPoweredComponent({
       setSearchText("");
     }
   };
-
-  console.log('search component')
 
   const handleRemoveIngredient = (ingredientToRemove: any) => {
     setIngredients(
@@ -111,8 +151,8 @@ export default function AIPoweredComponent({
       const requestBody = {
         ingredients: ingredients,
         country: getCountryNameForAPI(selectedCountry.code),
-        language: "en", // You can make this dynamic based on user preference
-        deviceLanguage: "en-US", // You can get this from device settings
+        language: "en",
+        deviceLanguage: "en-US",
         dietType: selectedMode.code
       };
 
@@ -132,15 +172,12 @@ export default function AIPoweredComponent({
 
       const data = await response.json();
       
-      // Better logging to see the full response structure
       console.log("Full response:", JSON.stringify(data, null, 2));
 
-      // Validate response structure
       if (!data.dishData || !data.dishData.DishSuggestions) {
         throw new Error("Invalid response structure from API");
       }
 
-      // Navigate to dishes screen with the response data
       router.push({
         pathname: "/main/dishes",
         params: {
@@ -170,15 +207,13 @@ export default function AIPoweredComponent({
     setShowProfileMenu(false);
     switch (option) {
       case "login":
-        console.log("Navigate to login");
+        router.push("/auth/sign-in");
         break;
       case "privacy":
-        router.push('/main/privacy/PrivacyPolicyScreen')
-        console.log("Navigate to Privacy & Policy");
+        router.push('/main/privacy/PrivacyPolicyScreen');
         break;
       case "terms":
-        router.push('/main/terms/TermsOfUseScreen')
-        console.log("Navigate to Terms of Use");
+        router.push('/main/terms/TermsOfUseScreen');
         break;
       case "liked":
         router.push({
@@ -187,15 +222,13 @@ export default function AIPoweredComponent({
         });
         break;
       case "saved":
-        router.push('/main/saved/SavedRecipesScreen')
-        console.log("Navigate to Saved Recipes");
+        router.push('/main/saved/SavedRecipesScreen');
         break;
       case "upgrade":
         onUpgrade();
         break;
       case "logout":
-        console.log("Log out user");
-        setIsLoggedIn(false);
+        handleLogout();
         break;
       case "delete":
         setShowDeleteConfirmation(true);
@@ -203,9 +236,48 @@ export default function AIPoweredComponent({
     }
   };
 
-  const handleDeleteAccount = () => {
-    setShowDeleteConfirmation(false);
-    router.push("/onboarding");
+  const handleLogout = async () => {
+    try {
+      // Clear all stored auth data
+      await SecureStore.deleteItemAsync("accessToken");
+      await SecureStore.deleteItemAsync("refreshToken");
+      await SecureStore.deleteItemAsync("userId");
+      await SecureStore.deleteItemAsync("userEmail");
+      await SecureStore.deleteItemAsync("displayName");
+      await SecureStore.deleteItemAsync("appleUserEmail");
+      await SecureStore.deleteItemAsync("appleUserName");
+      
+      // Update state
+      setIsLoggedIn(false);
+      setUserInfo({
+        displayName: "",
+        email: "",
+        isGuest: true
+      });
+      setUserPlan("free");
+      
+      console.log("User logged out successfully");
+    } catch (error) {
+      console.error("Error during logout:", error);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      // You might want to call your API to delete the account first
+      // await fetchWithAuth("https://api.thecookai.app/v1/auth/delete-account", { method: "DELETE" });
+      
+      // Clear all stored data
+      await handleLogout();
+      
+      setShowDeleteConfirmation(false);
+      
+      // Navigate to onboarding
+      router.push("/onboarding");
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      Alert.alert("Error", "Failed to delete account. Please try again.");
+    }
   };
 
   const handleCancelDelete = () => {
@@ -328,6 +400,21 @@ export default function AIPoweredComponent({
             </TouchableOpacity>
           ) : (
             <>
+              <View style={styles.userInfoSection}>
+                <Text style={[
+                  styles.userDisplayName,
+                  { color: theme.colors.text.primary },
+                ]}>
+                  {userInfo.displayName}
+                </Text>
+                <Text style={[
+                  styles.userEmail,
+                  { color: theme.colors.text.secondary },
+                ]}>
+                  {userInfo.email}
+                </Text>
+              </View>
+
               <View style={styles.planSection}>
                 <Text style={[
                   styles.planTitle,
@@ -780,6 +867,21 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 5,
     gap: 8,
+  },
+  userInfoSection: {
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E5E5",
+  },
+  userDisplayName: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  userEmail: {
+    fontSize: 14,
+    fontWeight: "400",
   },
   notificationButton: {
     padding: 8,
