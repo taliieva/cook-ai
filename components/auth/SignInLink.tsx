@@ -8,7 +8,7 @@ export const SignInLink: React.FC = () => {
   const theme = useTheme();
 
   const handleSignIn = () => {
-    router.push('/sign-in' as any);
+    router.push('/auth/sign-in');
   };
 
   return (
