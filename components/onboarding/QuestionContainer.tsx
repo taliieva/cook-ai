@@ -21,7 +21,7 @@ export const QuestionContainer = ({
   progress,
   onNext,
   isAnswered,
-  backgroundImage = 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80'
+  backgroundImage = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80'
 }) => {
   const theme = useTheme();
 
@@ -128,14 +128,16 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: '300',
+    fontStyle: 'italic',
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 40,
-    fontFamily: Platform.OS === 'ios' ? 'Georgia-Bold' : 'serif',
-    textShadowColor: 'rgba(0, 0, 0, 0.7)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 8,
+    fontFamily: Platform.OS === 'ios' ? 'Georgia-Italic' : 'serif',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+    letterSpacing: 0.5,
   },
   bottomSection: {
     position: 'absolute',

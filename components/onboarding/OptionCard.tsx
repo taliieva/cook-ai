@@ -9,16 +9,16 @@ export const OptionCard = ({
   isSelected,
   onPress,
   icon,
-}) => {
+}: any) => {
   const theme = useTheme();
-  const scaleAnim = new Animated.Value(isSelected ? 1 : 0.98);
+  const scaleAnim = new Animated.Value(isSelected ? 1 : 0.99);
 
   React.useEffect(() => {
     Animated.spring(scaleAnim, {
-      toValue: isSelected ? 1 : 0.98,
+      toValue: isSelected ? 1 : 0.99,
       useNativeDriver: true,
-      tension: 300,
-      friction: 10,
+      tension: 400,
+      friction: 8,
     }).start();
   }, [isSelected]);
 
@@ -38,60 +38,61 @@ export const OptionCard = ({
             }
             style={styles.gradientBackground}
             start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+            end={{ x: 1, y: 0.8 }}
           />
 
           {/* Content Container */}
           <View style={styles.contentContainer}>
-            {/* Icon and Check Row */}
-            <View style={styles.topRow}>
-              {icon && (
-                <View style={[
-                  styles.iconContainer,
-                  isSelected && styles.selectedIconContainer
-                ]}>
+            {/* Main Content Row */}
+            <View style={styles.mainRow}>
+              {/* Left Side: Icon and Text */}
+              <View style={styles.leftContent}>
+                {icon && (
+                  <View style={[
+                    styles.iconContainer,
+                    isSelected && styles.selectedIconContainer
+                  ]}>
+                    <Text style={[
+                      styles.icon,
+                      isSelected && styles.selectedIcon
+                    ]}>{icon}</Text>
+                  </View>
+                )}
+                
+                <View style={styles.textContainer}>
                   <Text style={[
-                    styles.icon,
-                    isSelected && styles.selectedIcon
-                  ]}>{icon}</Text>
+                    styles.cardTitle,
+                    isSelected && styles.selectedTitle
+                  ]}>
+                    {title}
+                  </Text>
+
+                  {description && (
+                    <Text style={[
+                      styles.cardDescription,
+                      isSelected && styles.selectedDescription
+                    ]}>
+                      {description}
+                    </Text>
+                  )}
                 </View>
-              )}
-              
+              </View>
+
+              {/* Right Side: Selection Indicator */}
               <View style={[
-                styles.checkmark,
-                isSelected && styles.checkmarkSelected
+                styles.radioButton,
+                isSelected && styles.radioButtonSelected
               ]}>
                 {isSelected && (
-                  <View style={styles.checkmarkInner}>
-                    <Text style={styles.checkmarkText}>✓</Text>
-                  </View>
+                  <View style={styles.radioButtonInner} />
                 )}
               </View>
             </View>
-
-            {/* Text Content */}
-            <View style={styles.textContainer}>
-              <Text style={[
-                styles.cardTitle,
-                isSelected && styles.selectedTitle
-              ]}>
-                {title}
-              </Text>
-
-              {description && (
-                <Text style={[
-                  styles.cardDescription,
-                  isSelected && styles.selectedDescription
-                ]}>
-                  {description}
-                </Text>
-              )}
-            </View>
           </View>
 
-          {/* Selection Indicator */}
+          {/* Subtle Selection Border */}
           {isSelected && (
-            <View style={styles.selectionIndicator} />
+            <View style={styles.selectionBorder} />
           )}
         </View>
       </TouchableOpacity>
@@ -101,30 +102,33 @@ export const OptionCard = ({
 
 const styles = StyleSheet.create({
   cardContainer: {
-    marginBottom: 16,
+    marginBottom: 8,
+    alignSelf: 'center',
+    width: '95%',
+    maxWidth: 450,
   },
   touchable: {
-    borderRadius: 20,
+    borderRadius: 14,
   },
   card: {
-    borderRadius: 20,
+    borderRadius: 14,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 1,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+    borderWidth: 1,
+    borderColor: '#F1F3F4',
     position: 'relative',
   },
   selectedCard: {
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
     borderColor: '#FF6B6B',
     shadowColor: '#FF6B6B',
   },
@@ -136,86 +140,93 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   contentContainer: {
-    padding: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
     position: 'relative',
     zIndex: 1,
+    justifyContent: 'center',
+    minHeight: 80,
   },
-  topRow: {
+  mainRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
+  },
+  leftContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
   },
   iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#F3F4F6',
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#F8F9FA',
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 12,
   },
   selectedIconContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
   },
   icon: {
-    fontSize: 24,
+    fontSize: 16,
   },
   selectedIcon: {
     // Icon color remains the same for emoji
-  },
-  checkmark: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#E5E7EB',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkmarkSelected: {
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  checkmarkInner: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkmarkText: {
-    color: '#FF6B6B',
-    fontSize: 12,
-    fontWeight: 'bold',
   },
   textContainer: {
     flex: 1,
   },
   cardTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 6,
-    lineHeight: 26,
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1A202C',
+    lineHeight: 18,
+    marginBottom: 2,
   },
   selectedTitle: {
     color: '#FFFFFF',
   },
   cardDescription: {
-    fontSize: 15,
-    color: '#6B7280',
-    lineHeight: 22,
+    fontSize: 12,
+    color: '#718096',
+    lineHeight: 16,
     fontWeight: '400',
   },
   selectedDescription: {
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: 'rgba(255, 255, 255, 0.8)',
   },
-  selectionIndicator: {
+  radioButton: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
+    backgroundColor: 'transparent',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 12,
+  },
+  radioButtonSelected: {
+    borderColor: '#FFFFFF',
+    backgroundColor: 'transparent',
+  },
+  radioButtonInner: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FFFFFF',
+  },
+  selectionBorder: {
     position: 'absolute',
     top: 0,
     left: 0,
-    width: 4,
-    height: '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 2,
+    right: 0,
+    bottom: 0,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    pointerEvents: 'none',
   },
 });

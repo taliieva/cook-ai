@@ -8,6 +8,9 @@
     "scheme": "reactnativedemoapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "assetBundlePatterns": [
+      "assets/**/*"
+    ],
 
     "ios": {
       "supportsTablet": true,
@@ -22,6 +25,7 @@
         "backgroundColor": "#ffffff"
       }
     },
+    
 
     "web": {
       "bundler": "metro",

@@ -1,27 +1,31 @@
 import { useTheme } from "@/hooks/useTheme";
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
   Dimensions,
+  Image,
   SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 
-// Import separate components
-import BillingComponent from '../main/billing/BillingComponent';
-import LikedComponent from '../main/liked/LikedComponent';
-import AIPoweredComponent from '../main/search/AIPoweredComponent';
-import InsightsComponent from './app-insight';
+// Import your PNG icon
+import siriLogo from "../../assets/images/ai-logo.png";
+import BillingComponent from "../main/billing/BillingComponent";
+import LikedComponent from "../main/liked/LikedComponent";
+import AIPoweredComponent from "../main/search/AIPoweredComponent";
+import InsightsComponent from "./app-insight";
 
 const { width, height } = Dimensions.get("window");
 
 // Mock countries data
 const countries = [
   { name: "All Countries", flag: "🌍", code: "all" },
+  { name: "Azərbaycan", flag: "🇦🇿", code: "az" },
+  { name: "Türkiye", flag: "🇹🇷", code: "tr" },
   { name: "Italian", flag: "🇮🇹", code: "it" },
   { name: "Chinese", flag: "🇨🇳", code: "cn" },
   { name: "Mexican", flag: "🇲🇽", code: "mx" },
@@ -30,51 +34,64 @@ const countries = [
   { name: "Indian", flag: "🇮🇳", code: "in" },
   { name: "American", flag: "🇺🇸", code: "us" },
   { name: "Thai", flag: "🇹🇭", code: "th" },
+
 ];
 
 // Modes data
 const modes = [
-  { name: "Standard", icon: "restaurant-outline", code: "standard", isPro: false },
+  {
+    name: "Standard",
+    icon: "restaurant-outline",
+    code: "standard",
+    isPro: false,
+  },
   { name: "Gym", icon: "fitness-outline", code: "gym", isPro: false },
   { name: "Diet", icon: "leaf-outline", code: "diet", isPro: false },
   { name: "Vegan", icon: "flower-outline", code: "vegan", isPro: true },
-  { name: "Vegetarian", icon: "nutrition-outline", code: "vegetarian", isPro: true },
+  {
+    name: "Vegetarian",
+    icon: "nutrition-outline",
+    code: "vegetarian",
+    isPro: true,
+  },
 ];
 
-// Tab configuration with attractive icons
+// Tab configuration - simplified approach
 const tabs = [
-  { 
-    id: "ai", 
-    icon: "sparkles", 
-    activeIcon: "sparkles",
-    label: "AI Search" 
+  {
+    id: "ai",
+    label: "AI Search",
+    type: "image", // Special type for PNG
   },
-  { 
-    id: "insights", 
-    icon: "analytics-outline", 
+  {
+    id: "insights",
+    icon: "analytics-outline",
     activeIcon: "analytics",
-    label: "Insights" 
+    label: "Insights",
+    type: "icon",
   },
-  { 
-    id: "liked", 
-    icon: "heart-outline", 
+  {
+    id: "liked",
+    icon: "heart-outline",
     activeIcon: "heart",
-    label: "Favorites" 
+    label: "Favorites",
+    type: "icon",
   },
-  { 
-    id: "billing", 
-    icon: "diamond-outline", 
+  {
+    id: "billing",
+    icon: "diamond-outline",
     activeIcon: "diamond",
-    label: "Premium" 
+    label: "Premium",
+    type: "icon",
   },
 ];
 
 export default function UnifiedMainScreen() {
   const theme = useTheme();
-  
+
   // Main app state
   const [activeTab, setActiveTab] = useState("ai");
-  
+
   // Shared state between components
   const [ingredients, setIngredients] = useState([]);
   const [selectedCountry, setSelectedCountry] = useState(countries[0]);
@@ -94,11 +111,46 @@ export default function UnifiedMainScreen() {
   // Handle search again from insights
   const handleSearchAgain = (searchTerms, cuisine, mode) => {
     setIngredients(searchTerms);
-    setSelectedCountry(countries.find(c => c.name === cuisine) || countries[0]);
+    setSelectedCountry(
+      countries.find((c) => c.name === cuisine) || countries[0]
+    );
     if (mode) {
-      setSelectedMode(modes.find(m => m.name === mode) || modes[0]);
+      setSelectedMode(modes.find((m) => m.name === mode) || modes[0]);
     }
-    setActiveTab('ai');
+    setActiveTab("ai");
+  };
+
+  // Custom function to render tab icon
+  const renderTabIcon = (tab, isActive) => {
+    if (tab.type === "image") {
+      // Special handling for AI Search tab with PNG
+      return (
+        <View style={styles.imageIconContainer}>
+          <Image
+            source={siriLogo}
+            style={[
+              styles.tabImageIcon,
+              {
+                opacity: isActive ? 1 : 0.7,
+                // Remove tintColor to preserve original PNG colors
+                // Or keep it if you want color changes:
+                // tintColor: isActive ? "#007AFF" : theme.colors.text.secondary,
+              },
+            ]}
+            resizeMode="contain"
+          />
+        </View>
+      );
+    } else {
+      // Regular Ionicons for other tabs
+      return (
+        <Ionicons
+          name={isActive ? tab.activeIcon : tab.icon}
+          size={24}
+          color={isActive ? "#007AFF" : theme.colors.text.secondary}
+        />
+      );
+    }
   };
 
   // Render current section based on active tab
@@ -106,7 +158,7 @@ export default function UnifiedMainScreen() {
     switch (activeTab) {
       case "ai":
         return (
-          <AIPoweredComponent 
+          <AIPoweredComponent
             ingredients={ingredients}
             setIngredients={setIngredients}
             selectedCountry={selectedCountry}
@@ -118,24 +170,19 @@ export default function UnifiedMainScreen() {
         );
       case "insights":
         return (
-          <InsightsComponent 
+          <InsightsComponent
             userPlan={userPlan}
             onSearchAgain={handleSearchAgain}
             onUpgrade={handleUpgrade}
           />
         );
       case "liked":
-        return (
-          <LikedComponent 
-            userPlan={userPlan}
-            onUpgrade={handleUpgrade}
-          />
-        );
+        return <LikedComponent userPlan={userPlan} onUpgrade={handleUpgrade} />;
       case "billing":
         return <BillingComponent />;
       default:
         return (
-          <AIPoweredComponent 
+          <AIPoweredComponent
             ingredients={ingredients}
             setIngredients={setIngredients}
             selectedCountry={selectedCountry}
@@ -161,24 +208,23 @@ export default function UnifiedMainScreen() {
       />
 
       {/* Dynamic content based on active tab */}
-      <View style={styles.contentContainer}>
-        {renderCurrentSection()}
-      </View>
+      <View style={styles.contentContainer}>{renderCurrentSection()}</View>
 
-      {/* Footer with Attractive Icons */}
+      {/* Footer Navigation */}
       <View style={styles.footerContainer}>
-        {/* Modern glassmorphism background */}
-        <View style={[
-          styles.footerBackground,
-          { 
-            backgroundColor: theme.isDark 
-              ? 'rgba(28, 28, 30, 0.95)' 
-              : 'rgba(255, 255, 255, 0.95)',
-            borderTopColor: theme.isDark 
-              ? 'rgba(255, 255, 255, 0.08)' 
-              : 'rgba(0, 0, 0, 0.08)'
-          }
-        ]}>
+        <View
+          style={[
+            styles.footerBackground,
+            {
+              backgroundColor: theme.isDark
+                ? "rgba(28, 28, 30, 0.95)"
+                : "rgba(255, 255, 255, 0.95)",
+              borderTopColor: theme.isDark
+                ? "rgba(255, 255, 255, 0.08)"
+                : "rgba(0, 0, 0, 0.08)",
+            },
+          ]}
+        >
           <View style={styles.tabsContainer}>
             {tabs.map((tab) => {
               const isActive = activeTab === tab.id;
@@ -190,31 +236,24 @@ export default function UnifiedMainScreen() {
                     isActive && [
                       styles.activeTabItem,
                       {
-                        backgroundColor: theme.isDark 
-                          ? 'rgba(0, 122, 255, 0.2)' 
-                          : 'rgba(0, 122, 255, 0.1)',
-                        shadowColor: "#007AFF",
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: 0.3,
-                        shadowRadius: 4,
-                        elevation: 4,
-                      }
-                    ]
+                        backgroundColor: theme.isDark
+                          ? "rgba(0, 122, 255, 0.2)"
+                          : "rgba(0, 122, 255, 0.1)",
+                      },
+                    ],
                   ]}
                   onPress={() => handleTabPress(tab.id)}
                   activeOpacity={0.7}
                 >
-                  <Ionicons
-                    name={isActive ? tab.activeIcon : tab.icon}
-                    size={24}
-                    color={isActive ? "#007AFF" : theme.colors.text.secondary}
-                  />
+                  {/* Render icon using custom function */}
+                  {renderTabIcon(tab, isActive)}
+
                   <Text
                     style={[
                       styles.tabLabel,
                       {
-                        color: isActive 
-                          ? "#007AFF" 
+                        color: isActive
+                          ? "#007AFF"
                           : theme.colors.text.secondary,
                         opacity: isActive ? 1 : 0.7,
                       },
@@ -241,7 +280,7 @@ const styles = StyleSheet.create({
     paddingBottom: 50, // Space for footer
   },
   footerContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
@@ -252,17 +291,17 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 8,
     paddingHorizontal: 16,
-    backdropFilter: 'blur(20px)', // For iOS blur effect
+    backdropFilter: "blur(20px)",
   },
   tabsContainer: {
     flexDirection: "row",
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    width: '100%',
+    alignItems: "center",
+    justifyContent: "space-around",
+    width: "100%",
   },
   tabItem: {
     alignItems: "center",
-    justifyContent: 'center',
+    justifyContent: "center",
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 16,
@@ -276,8 +315,19 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     fontSize: 11,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 4,
-    fontWeight: '500',
+    fontWeight: "500",
+  },
+  // New styles for PNG icon
+  imageIconContainer: {
+    width: 24,
+    height: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tabImageIcon: {
+    width: 38,
+    height: 38,
   },
 });

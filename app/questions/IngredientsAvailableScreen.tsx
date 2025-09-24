@@ -57,7 +57,7 @@ export default function IngredientsAvailableScreen() {
 
   const handleNext = () => {
     // Complete onboarding - navigate to main app
-    router.push('/onboarding/ai-intro');
+    router.push('/onboarding/ingredients-search');
   };
 
   return (
@@ -66,7 +66,7 @@ export default function IngredientsAvailableScreen() {
       progress={100}
       onNext={handleNext}
       isAnswered={selectedIngredients.length > 0}
-      backgroundImage="https://images.unsplash.com/photo-1542838132-92c53300491e?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80"
+      backgroundImage="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80"
     >
       <ScrollView 
         showsVerticalScrollIndicator={false}

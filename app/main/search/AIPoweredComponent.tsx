@@ -23,6 +23,8 @@ const { width, height } = Dimensions.get("window");
 // Mock countries data with flags
 const countries = [
   { name: "All Countries", flag: "🌍", code: "all" },
+  { name: "Azərbaycan", flag: "🇦🇿", code: "az" },
+  { name: "Türkiye", flag: "🇹🇷", code: "tr" },
   { name: "Italian", flag: "🇮🇹", code: "it" },
   { name: "Chinese", flag: "🇨🇳", code: "cn" },
   { name: "Mexican", flag: "🇲🇽", code: "mx" },
@@ -35,30 +37,67 @@ const countries = [
 
 // Modes data with icons and colors
 const modes = [
-  { name: "Standard", icon: "restaurant-outline", code: "standard", isPro: false, color: "#FF8C00" },
-  { name: "Gym", icon: "fitness-outline", code: "gym", isPro: false, color: "#FF4444" },
-  { name: "Diet", icon: "leaf-outline", code: "diet", isPro: false, color: "#4CAF50" },
-  { name: "Vegan", icon: "flower-outline", code: "vegan", isPro: true, color: "#8BC34A" },
-  { name: "Vegetarian", icon: "nutrition-outline", code: "vegetarian", isPro: true, color: "#4CAF50" },
+  {
+    name: "Standard",
+    icon: "restaurant-outline",
+    code: "standard",
+    isPro: false,
+    color: "#FF8C00",
+  },
+  {
+    name: "Gym",
+    icon: "fitness-outline",
+    code: "gym",
+    isPro: false,
+    color: "#FF4444",
+  },
+  {
+    name: "Diet",
+    icon: "leaf-outline",
+    code: "diet",
+    isPro: false,
+    color: "#4CAF50",
+  },
+  {
+    name: "Vegan",
+    icon: "flower-outline",
+    code: "vegan",
+    isPro: true,
+    color: "#8BC34A",
+  },
+  {
+    name: "Vegetarian",
+    icon: "nutrition-outline",
+    code: "vegetarian",
+    isPro: true,
+    color: "#4CAF50",
+  },
 ];
 
 // Helper function to get mode color with transparency
 const getModeColor = (mode, opacity = 1) => {
-  return opacity === 1 ? mode.color : mode.color + Math.round(opacity * 255).toString(16).padStart(2, '0');
+  return opacity === 1
+    ? mode.color
+    : mode.color +
+        Math.round(opacity * 255)
+          .toString(16)
+          .padStart(2, "0");
 };
 
 // Country code to country name mapping for API
 const getCountryNameForAPI = (countryCode: string): string => {
   const countryMap: { [key: string]: string } = {
-    "all": "All Countries",
-    "it": "Italy",
-    "cn": "China", 
-    "mx": "Mexico",
-    "jp": "Japan",
-    "fr": "France",
-    "in": "India",
-    "us": "United States",
-    "th": "Thailand",
+    all: "All Countries",
+    az: "Azərbaycan",
+    tr: "Türkiye",
+    it: "Italy",
+    cn: "China",
+    mx: "Mexico",
+    jp: "Japan",
+    fr: "France",
+    in: "India",
+    us: "United States",
+    th: "Thailand",
   };
   return countryMap[countryCode] || "All Countries";
 };
@@ -70,7 +109,7 @@ export default function AIPoweredComponent({
   setSelectedCountry,
   selectedMode,
   setSelectedMode,
-  onUpgrade
+  onUpgrade,
 }: any) {
   const router = useRouter();
   const theme = useTheme();
@@ -87,7 +126,7 @@ export default function AIPoweredComponent({
   const [userInfo, setUserInfo] = useState({
     displayName: "",
     email: "",
-    isGuest: true
+    isGuest: true,
   });
 
   // Check authentication status on component mount
@@ -100,15 +139,15 @@ export default function AIPoweredComponent({
       const accessToken = await SecureStore.getItemAsync("accessToken");
       const displayName = await SecureStore.getItemAsync("displayName");
       const userEmail = await SecureStore.getItemAsync("userEmail");
-      
+
       if (accessToken && displayName && userEmail) {
         setIsLoggedIn(true);
         setUserInfo({
           displayName,
           email: userEmail,
-          isGuest: false
+          isGuest: false,
         });
-        
+
         // You might want to fetch subscription status from your API here
         // For now, assuming free plan
         setUserPlan("free");
@@ -117,7 +156,7 @@ export default function AIPoweredComponent({
         setUserInfo({
           displayName: "",
           email: "",
-          isGuest: true
+          isGuest: true,
         });
       }
     } catch (error) {
@@ -141,7 +180,10 @@ export default function AIPoweredComponent({
 
   const handleFindDishes = async () => {
     if (ingredients.length === 0) {
-      Alert.alert("No Ingredients", "Please add at least one ingredient to find dishes.");
+      Alert.alert(
+        "No Ingredients",
+        "Please add at least one ingredient to find dishes."
+      );
       return;
     }
 
@@ -153,7 +195,7 @@ export default function AIPoweredComponent({
         country: getCountryNameForAPI(selectedCountry.code),
         language: "en",
         deviceLanguage: "en-US",
-        dietType: selectedMode.code
+        dietType: selectedMode.code,
       };
 
       console.log("=== API Request Debug ===");
@@ -161,17 +203,20 @@ export default function AIPoweredComponent({
       console.log("Request body:", JSON.stringify(requestBody, null, 2));
       console.log("========================");
 
-      const response = await fetchWithAuth("https://api.thecookai.app/v1/recipes", {
-        method: "POST",
-        body: JSON.stringify(requestBody),
-      });
+      const response = await fetchWithAuth(
+        "https://api.thecookai.app/v1/recipes",
+        {
+          method: "POST",
+          body: JSON.stringify(requestBody),
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
-      
+
       console.log("Full response:", JSON.stringify(data, null, 2));
 
       if (!data.dishData || !data.dishData.DishSuggestions) {
@@ -188,14 +233,13 @@ export default function AIPoweredComponent({
           localizedSummary: JSON.stringify(data.localizedSummary || {}),
           requestId: data.requestId || "",
           searchId: data.searchId || "",
-          usageInfo: JSON.stringify(data.usageInfo || {})
-        }
+          usageInfo: JSON.stringify(data.usageInfo || {}),
+        },
       });
-
     } catch (error) {
       console.error("Error fetching dishes:", error);
       Alert.alert(
-        "Error", 
+        "Error",
         "Failed to fetch dishes. Please check your internet connection and try again."
       );
     } finally {
@@ -210,19 +254,19 @@ export default function AIPoweredComponent({
         router.push("/auth/sign-in");
         break;
       case "privacy":
-        router.push('/main/privacy/PrivacyPolicyScreen');
+        router.push("/main/privacy/PrivacyPolicyScreen");
         break;
       case "terms":
-        router.push('/main/terms/TermsOfUseScreen');
+        router.push("/main/terms/TermsOfUseScreen");
         break;
       case "liked":
         router.push({
-          pathname: '/main/liked/LikedComponent',
-          params: { standalone: 'true' }
+          pathname: "/main/liked/LikedComponent",
+          params: { standalone: "true" },
         });
         break;
       case "saved":
-        router.push('/main/saved/SavedRecipesScreen');
+        router.push("/main/saved/SavedRecipesScreen");
         break;
       case "upgrade":
         onUpgrade();
@@ -246,16 +290,16 @@ export default function AIPoweredComponent({
       await SecureStore.deleteItemAsync("displayName");
       await SecureStore.deleteItemAsync("appleUserEmail");
       await SecureStore.deleteItemAsync("appleUserName");
-      
+
       // Update state
       setIsLoggedIn(false);
       setUserInfo({
         displayName: "",
         email: "",
-        isGuest: true
+        isGuest: true,
       });
       setUserPlan("free");
-      
+
       console.log("User logged out successfully");
     } catch (error) {
       console.error("Error during logout:", error);
@@ -266,12 +310,12 @@ export default function AIPoweredComponent({
     try {
       // You might want to call your API to delete the account first
       // await fetchWithAuth("https://api.thecookai.app/v1/auth/delete-account", { method: "DELETE" });
-      
+
       // Clear all stored data
       await handleLogout();
-      
+
       setShowDeleteConfirmation(false);
-      
+
       // Navigate to onboarding
       router.push("/onboarding");
     } catch (error) {
@@ -307,41 +351,59 @@ export default function AIPoweredComponent({
       onRequestClose={handleCancelDelete}
     >
       <View style={styles.confirmationOverlay}>
-        <View style={[
-          styles.confirmationModal,
-          {
-            backgroundColor: theme.colors.background.secondary,
-            borderColor: theme.colors.border,
-          },
-        ]}>
+        <View
+          style={[
+            styles.confirmationModal,
+            {
+              backgroundColor: theme.colors.background.secondary,
+              borderColor: theme.colors.border,
+            },
+          ]}
+        >
           <View style={styles.confirmationHeader}>
-            <Text style={[
-              styles.confirmationTitle,
-              { color: theme.colors.text.primary },
-            ]}>
+            <Text
+              style={[
+                styles.confirmationTitle,
+                { color: theme.colors.text.primary },
+              ]}
+            >
               Delete Account
             </Text>
             <TouchableOpacity onPress={handleCancelDelete}>
-              <Ionicons name="close" size={24} color={theme.colors.text.secondary} />
+              <Ionicons
+                name="close"
+                size={24}
+                color={theme.colors.text.secondary}
+              />
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.confirmationContent}>
-            <Ionicons name="warning-outline" size={48} color="#FF4444" style={styles.warningIcon} />
-            <Text style={[
-              styles.confirmationMessage,
-              { color: theme.colors.text.primary },
-            ]}>
+            <Ionicons
+              name="warning-outline"
+              size={48}
+              color="#FF4444"
+              style={styles.warningIcon}
+            />
+            <Text
+              style={[
+                styles.confirmationMessage,
+                { color: theme.colors.text.primary },
+              ]}
+            >
               Are you sure?
             </Text>
-            <Text style={[
-              styles.confirmationSubMessage,
-              { color: theme.colors.text.secondary },
-            ]}>
-              This action cannot be undone and all your data will be permanently lost.
+            <Text
+              style={[
+                styles.confirmationSubMessage,
+                { color: theme.colors.text.secondary },
+              ]}
+            >
+              This action cannot be undone and all your data will be permanently
+              lost.
             </Text>
           </View>
-          
+
           <View style={styles.confirmationButtons}>
             <TouchableOpacity
               style={[
@@ -353,14 +415,19 @@ export default function AIPoweredComponent({
               ]}
               onPress={handleCancelDelete}
             >
-              <Text style={[
-                styles.cancelButtonText,
-                { color: theme.colors.text.primary },
-              ]}>
+              <Text
+                style={[
+                  styles.cancelButtonText,
+                  { color: theme.colors.text.primary },
+                ]}
+              >
                 No
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteAccount}>
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={handleDeleteAccount}
+            >
               <Text style={styles.deleteButtonText}>Yes, Delete</Text>
             </TouchableOpacity>
           </View>
@@ -381,64 +448,84 @@ export default function AIPoweredComponent({
         activeOpacity={1}
         onPress={() => setShowProfileMenu(false)}
       >
-        <View style={[
-          styles.profileMenu,
-          {
-            backgroundColor: theme.colors.background.secondary,
-            borderColor: theme.colors.border,
-          },
-        ]}>
+        <View
+          style={[
+            styles.profileMenu,
+            {
+              backgroundColor: theme.colors.background.secondary,
+              borderColor: theme.colors.border,
+            },
+          ]}
+        >
           {!isLoggedIn ? (
             <TouchableOpacity
               style={styles.menuItem}
               onPress={() => handleProfileMenuOption("login")}
             >
-              <Ionicons name="log-in-outline" size={20} color={theme.colors.text.primary} />
-              <Text style={[styles.menuText, { color: theme.colors.text.primary }]}>
+              <Ionicons
+                name="log-in-outline"
+                size={20}
+                color={theme.colors.text.primary}
+              />
+              <Text
+                style={[styles.menuText, { color: theme.colors.text.primary }]}
+              >
                 Log in
               </Text>
             </TouchableOpacity>
           ) : (
             <>
               <View style={styles.userInfoSection}>
-                <Text style={[
-                  styles.userDisplayName,
-                  { color: theme.colors.text.primary },
-                ]}>
+                <Text
+                  style={[
+                    styles.userDisplayName,
+                    { color: theme.colors.text.primary },
+                  ]}
+                >
                   {userInfo.displayName}
                 </Text>
-                <Text style={[
-                  styles.userEmail,
-                  { color: theme.colors.text.secondary },
-                ]}>
+                <Text
+                  style={[
+                    styles.userEmail,
+                    { color: theme.colors.text.secondary },
+                  ]}
+                >
                   {userInfo.email}
                 </Text>
               </View>
 
               <View style={styles.planSection}>
-                <Text style={[
-                  styles.planTitle,
-                  { color: theme.colors.text.primary },
-                ]}>
+                <Text
+                  style={[
+                    styles.planTitle,
+                    { color: theme.colors.text.primary },
+                  ]}
+                >
                   Your Plan
                 </Text>
                 <View style={styles.planContent}>
-                  <View style={[
-                    styles.planBadge,
-                    {
-                      backgroundColor: userPlan === "pro" 
-                        ? theme.colors.accent.primary + "20" 
-                        : theme.colors.text.secondary + "20",
-                    },
-                  ]}>
-                    <Text style={[
-                      styles.planLabel,
+                  <View
+                    style={[
+                      styles.planBadge,
                       {
-                        color: userPlan === "pro" 
-                          ? theme.colors.accent.primary 
-                          : theme.colors.text.secondary,
+                        backgroundColor:
+                          userPlan === "pro"
+                            ? theme.colors.accent.primary + "20"
+                            : theme.colors.text.secondary + "20",
                       },
-                    ]}>
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.planLabel,
+                        {
+                          color:
+                            userPlan === "pro"
+                              ? theme.colors.accent.primary
+                              : theme.colors.text.secondary,
+                        },
+                      ]}
+                    >
                       {userPlan === "pro" ? "Premium" : "Free"}
                     </Text>
                   </View>
@@ -455,91 +542,122 @@ export default function AIPoweredComponent({
                   )}
                 </View>
               </View>
-              
-              <View style={[
-                styles.menuDivider,
-                { backgroundColor: theme.colors.border },
-              ]} />
-              
+
+              <View
+                style={[
+                  styles.menuDivider,
+                  { backgroundColor: theme.colors.border },
+                ]}
+              />
+
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => handleProfileMenuOption("privacy")}
               >
-                <Ionicons name="shield-outline" size={20} color={theme.colors.text.primary} />
-                <Text style={[
-                  styles.menuText,
-                  { color: theme.colors.text.primary },
-                ]}>
+                <Ionicons
+                  name="shield-outline"
+                  size={20}
+                  color={theme.colors.text.primary}
+                />
+                <Text
+                  style={[
+                    styles.menuText,
+                    { color: theme.colors.text.primary },
+                  ]}
+                >
                   Privacy & Policy
                 </Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => handleProfileMenuOption("terms")}
               >
-                <Ionicons name="document-text-outline" size={20} color={theme.colors.text.primary} />
-                <Text style={[
-                  styles.menuText,
-                  { color: theme.colors.text.primary },
-                ]}>
+                <Ionicons
+                  name="document-text-outline"
+                  size={20}
+                  color={theme.colors.text.primary}
+                />
+                <Text
+                  style={[
+                    styles.menuText,
+                    { color: theme.colors.text.primary },
+                  ]}
+                >
                   Terms of Use
                 </Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => handleProfileMenuOption("liked")}
               >
-                <Ionicons name="heart-outline" size={20} color={theme.colors.text.primary} />
-                <Text style={[
-                  styles.menuText,
-                  { color: theme.colors.text.primary },
-                ]}>
+                <Ionicons
+                  name="heart-outline"
+                  size={20}
+                  color={theme.colors.text.primary}
+                />
+                <Text
+                  style={[
+                    styles.menuText,
+                    { color: theme.colors.text.primary },
+                  ]}
+                >
                   Liked Recipes
                 </Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => handleProfileMenuOption("saved")}
               >
-                <Ionicons name="bookmark-outline" size={20} color={theme.colors.text.primary} />
-                <Text style={[
-                  styles.menuText,
-                  { color: theme.colors.text.primary },
-                ]}>
+                <Ionicons
+                  name="bookmark-outline"
+                  size={20}
+                  color={theme.colors.text.primary}
+                />
+                <Text
+                  style={[
+                    styles.menuText,
+                    { color: theme.colors.text.primary },
+                  ]}
+                >
                   Saved Recipes
                 </Text>
               </TouchableOpacity>
-              
-              <View style={[
-                styles.menuDivider,
-                { backgroundColor: theme.colors.border },
-              ]} />
-              
+
+              <View
+                style={[
+                  styles.menuDivider,
+                  { backgroundColor: theme.colors.border },
+                ]}
+              />
+
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => handleProfileMenuOption("logout")}
               >
-                <Ionicons name="log-out-outline" size={20} color={theme.colors.text.primary} />
-                <Text style={[
-                  styles.menuText,
-                  { color: theme.colors.text.primary },
-                ]}>
+                <Ionicons
+                  name="log-out-outline"
+                  size={20}
+                  color={theme.colors.text.primary}
+                />
+                <Text
+                  style={[
+                    styles.menuText,
+                    { color: theme.colors.text.primary },
+                  ]}
+                >
                   Log out
                 </Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => handleProfileMenuOption("delete")}
               >
                 <Ionicons name="trash-outline" size={20} color="#FF4444" />
-                <Text style={[
-                  styles.menuText,
-                  { color: "#FF4444" },
-                ]}>
+                <Text style={[styles.menuText, { color: "#FF4444" }]}>
                   Delete account
                 </Text>
               </TouchableOpacity>
@@ -562,22 +680,30 @@ export default function AIPoweredComponent({
         activeOpacity={1}
         onPress={() => setShowCountrySelector(false)}
       >
-        <View style={[
-          styles.countrySelector,
-          {
-            backgroundColor: theme.colors.background.secondary,
-            borderColor: theme.colors.border,
-          },
-        ]}>
+        <View
+          style={[
+            styles.countrySelector,
+            {
+              backgroundColor: theme.colors.background.secondary,
+              borderColor: theme.colors.border,
+            },
+          ]}
+        >
           <View style={styles.countrySelectorHeader}>
-            <Text style={[
-              styles.countrySelectorTitle,
-              { color: theme.colors.text.primary },
-            ]}>
+            <Text
+              style={[
+                styles.countrySelectorTitle,
+                { color: theme.colors.text.primary },
+              ]}
+            >
               Select Cuisine
             </Text>
             <TouchableOpacity onPress={() => setShowCountrySelector(false)}>
-              <Ionicons name="close" size={24} color={theme.colors.text.primary} />
+              <Ionicons
+                name="close"
+                size={24}
+                color={theme.colors.text.primary}
+              />
             </TouchableOpacity>
           </View>
           <ScrollView style={styles.countryList}>
@@ -587,26 +713,34 @@ export default function AIPoweredComponent({
                 style={[
                   styles.countryItem,
                   {
-                    backgroundColor: selectedCountry.code === country.code
-                      ? theme.colors.accent.primary + "15"
-                      : "transparent",
+                    backgroundColor:
+                      selectedCountry.code === country.code
+                        ? theme.colors.accent.primary + "15"
+                        : "transparent",
                   },
                 ]}
                 onPress={() => handleCountrySelect(country)}
               >
                 <Text style={styles.countryFlag}>{country.flag}</Text>
-                <Text style={[
-                  styles.countryName,
-                  {
-                    color: selectedCountry.code === country.code
-                      ? theme.colors.accent.primary
-                      : theme.colors.text.primary,
-                  },
-                ]}>
+                <Text
+                  style={[
+                    styles.countryName,
+                    {
+                      color:
+                        selectedCountry.code === country.code
+                          ? theme.colors.accent.primary
+                          : theme.colors.text.primary,
+                    },
+                  ]}
+                >
                   {country.name}
                 </Text>
                 {selectedCountry.code === country.code && (
-                  <Ionicons name="checkmark" size={20} color={theme.colors.accent.primary} />
+                  <Ionicons
+                    name="checkmark"
+                    size={20}
+                    color={theme.colors.accent.primary}
+                  />
                 )}
               </TouchableOpacity>
             ))}
@@ -628,22 +762,30 @@ export default function AIPoweredComponent({
         activeOpacity={1}
         onPress={() => setShowModeSelector(false)}
       >
-        <View style={[
-          styles.modeSelectorModal,
-          {
-            backgroundColor: theme.colors.background.secondary,
-            borderColor: theme.colors.border,
-          },
-        ]}>
+        <View
+          style={[
+            styles.modeSelectorModal,
+            {
+              backgroundColor: theme.colors.background.secondary,
+              borderColor: theme.colors.border,
+            },
+          ]}
+        >
           <View style={styles.modeSelectorHeader}>
-            <Text style={[
-              styles.modeSelectorTitle,
-              { color: theme.colors.text.primary },
-            ]}>
+            <Text
+              style={[
+                styles.modeSelectorTitle,
+                { color: theme.colors.text.primary },
+              ]}
+            >
               Select Mode
             </Text>
             <TouchableOpacity onPress={() => setShowModeSelector(false)}>
-              <Ionicons name="close" size={24} color={theme.colors.text.primary} />
+              <Ionicons
+                name="close"
+                size={24}
+                color={theme.colors.text.primary}
+              />
             </TouchableOpacity>
           </View>
           <ScrollView style={styles.modeList}>
@@ -664,19 +806,22 @@ export default function AIPoweredComponent({
                   ]}
                   onPress={() => handleModeSelect(mode)}
                 >
-                  <Ionicons name={mode.icon as any} size={24} color={mode.color} />
+                  <Ionicons
+                    name={mode.icon as any}
+                    size={24}
+                    color={mode.color}
+                  />
                   <View style={styles.modeContent}>
-                    <Text style={[
-                      styles.modeName,
-                      { color: mode.color },
-                    ]}>
+                    <Text style={[styles.modeName, { color: mode.color }]}>
                       {mode.name}
                     </Text>
                     {mode.isPro && (
-                      <View style={[
-                        styles.proBadge,
-                        { backgroundColor: mode.color },
-                      ]}>
+                      <View
+                        style={[
+                          styles.proBadge,
+                          { backgroundColor: mode.color },
+                        ]}
+                      >
                         <Text style={styles.proText}>PRO</Text>
                       </View>
                     )}
@@ -685,7 +830,11 @@ export default function AIPoweredComponent({
                     <Ionicons name="checkmark" size={20} color={mode.color} />
                   )}
                   {isDisabled && (
-                    <Ionicons name="lock-closed" size={16} color={theme.colors.text.secondary} />
+                    <Ionicons
+                      name="lock-closed"
+                      size={16}
+                      color={theme.colors.text.secondary}
+                    />
                   )}
                 </TouchableOpacity>
               );
@@ -702,28 +851,43 @@ export default function AIPoweredComponent({
       <View style={styles.profileSection}>
         <TouchableOpacity
           style={styles.notificationButton}
-          onPress={() => alert('Coming soon')}
+          onPress={() => alert("Coming soon")}
         >
-          <Ionicons name="notifications-outline" size={28} color={theme.colors.text.primary} />
+          <Ionicons
+            name="notifications-outline"
+            size={28}
+            color={theme.colors.text.primary}
+          />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.profileButton}
           onPress={() => setShowProfileMenu(true)}
         >
-          <Ionicons name="person-circle-outline" size={28} color={theme.colors.text.primary} />
+          <Ionicons
+            name="person-circle-outline"
+            size={28}
+            color={theme.colors.text.primary}
+          />
         </TouchableOpacity>
       </View>
 
       {/* Search Input Section with Country Selector */}
       <View style={styles.searchSection}>
-        <View style={[
-          styles.searchContainer,
-          {
-            backgroundColor: theme.colors.background.secondary,
-            borderColor: theme.colors.border,
-          },
-        ]}>
-          <Ionicons name="search" size={20} color={theme.colors.text.secondary} style={styles.searchIcon} />
+        <View
+          style={[
+            styles.searchContainer,
+            {
+              backgroundColor: theme.colors.background.secondary,
+              borderColor: theme.colors.border,
+            },
+          ]}
+        >
+          <Ionicons
+            name="search"
+            size={20}
+            color={theme.colors.text.secondary}
+            style={styles.searchIcon}
+          />
           <TextInput
             style={[styles.searchInput, { color: theme.colors.text.primary }]}
             placeholder="Enter ingredients..."
@@ -738,19 +902,35 @@ export default function AIPoweredComponent({
             onPress={() => setShowCountrySelector(true)}
           >
             <Text style={styles.countryFlag}>{selectedCountry.flag}</Text>
-            <Ionicons name="chevron-down" size={16} color={theme.colors.text.secondary} />
+            <Ionicons
+              name="chevron-down"
+              size={16}
+              color={theme.colors.text.secondary}
+            />
           </TouchableOpacity>
           {searchText.length > 0 && (
-            <TouchableOpacity onPress={handleAddIngredient} style={styles.addButton}>
-              <Ionicons name="add-circle" size={24} color={theme.colors.accent.primary} />
+            <TouchableOpacity
+              onPress={handleAddIngredient}
+              style={styles.addButton}
+            >
+              <Ionicons
+                name="add-circle"
+                size={24}
+                color={theme.colors.accent.primary}
+              />
             </TouchableOpacity>
           )}
         </View>
       </View>
 
       {/* Ingredients List */}
-      <ScrollView style={styles.ingredientsSection} showsVerticalScrollIndicator={false}>
-        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
+      <ScrollView
+        style={styles.ingredientsSection}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text
+          style={[styles.sectionTitle, { color: theme.colors.text.primary }]}
+        >
           Your Ingredients ({ingredients.length})
         </Text>
         <View style={styles.ingredientsContainer}>
@@ -765,27 +945,39 @@ export default function AIPoweredComponent({
                 },
               ]}
             >
-              <Text style={[
-                styles.ingredientText,
-                { color: theme.colors.accent.primary },
-              ]}>
+              <Text
+                style={[
+                  styles.ingredientText,
+                  { color: theme.colors.accent.primary },
+                ]}
+              >
                 {ingredient}
               </Text>
               <TouchableOpacity
                 onPress={() => handleRemoveIngredient(ingredient)}
                 style={styles.removeButton}
               >
-                <Ionicons name="close-circle" size={18} color={theme.colors.accent.primary} />
+                <Ionicons
+                  name="close-circle"
+                  size={18}
+                  color={theme.colors.accent.primary}
+                />
               </TouchableOpacity>
             </View>
           ))}
           {ingredients.length === 0 && (
             <View style={styles.emptyState}>
-              <Ionicons name="restaurant-outline" size={48} color={theme.colors.text.secondary} />
-              <Text style={[
-                styles.emptyText,
-                { color: theme.colors.text.secondary },
-              ]}>
+              <Ionicons
+                name="restaurant-outline"
+                size={48}
+                color={theme.colors.text.secondary}
+              />
+              <Text
+                style={[
+                  styles.emptyText,
+                  { color: theme.colors.text.secondary },
+                ]}
+              >
                 Add ingredients to find amazing dishes from{" "}
                 {selectedCountry.name.toLowerCase()} cuisine!
               </Text>
@@ -796,7 +988,9 @@ export default function AIPoweredComponent({
 
       {/* Mode Selection */}
       <View style={styles.modeSection}>
-        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
+        <Text
+          style={[styles.sectionTitle, { color: theme.colors.text.primary }]}
+        >
           Mode
         </Text>
         <TouchableOpacity
@@ -810,18 +1004,23 @@ export default function AIPoweredComponent({
           onPress={() => setShowModeSelector(true)}
         >
           <View style={styles.selectedModeContent}>
-            <Ionicons name={selectedMode.icon as any} size={20} color={selectedMode.color} />
-            <Text style={[
-              styles.selectedModeText,
-              { color: selectedMode.color },
-            ]}>
+            <Ionicons
+              name={selectedMode.icon as any}
+              size={20}
+              color={selectedMode.color}
+            />
+            <Text
+              style={[styles.selectedModeText, { color: selectedMode.color }]}
+            >
               {selectedMode.name}
             </Text>
             {selectedMode.isPro && (
-              <View style={[
-                styles.proBadgeSmall,
-                { backgroundColor: selectedMode.color },
-              ]}>
+              <View
+                style={[
+                  styles.proBadgeSmall,
+                  { backgroundColor: selectedMode.color },
+                ]}
+              >
                 <Text style={styles.proTextSmall}>PRO</Text>
               </View>
             )}
@@ -837,7 +1036,7 @@ export default function AIPoweredComponent({
           onPress={handleFindDishes}
           style={{
             ...styles.findButton,
-            opacity: (ingredients.length > 0 && !isLoading) ? 1 : 0.5,
+            opacity: ingredients.length > 0 && !isLoading ? 1 : 0.5,
           }}
           disabled={ingredients.length === 0 || isLoading}
         />

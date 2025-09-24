@@ -65,7 +65,7 @@ export default function CuisinePreferenceScreen() {
       progress={80}
       onNext={handleNext}
       isAnswered={selectedCuisines.length > 0}
-      backgroundImage="https://images.unsplash.com/photo-1504674900247-0877df9cc836?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80"
+      backgroundImage="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80"
     >
       <ScrollView 
         showsVerticalScrollIndicator={false}
