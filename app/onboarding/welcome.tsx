@@ -72,7 +72,7 @@ export default function WelcomeScreen() {
       console.log("Sending guest auth request:", body);
 
       const response = await fetchWithAuth(
-        'https://api.thecookai.app/v1/auth/guest',
+        'https://cook-ai-backend-production.up.railway.app/v1/auth/guest',
         {
           method: 'POST',
           body: JSON.stringify(body),
