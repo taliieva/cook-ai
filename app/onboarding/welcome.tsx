@@ -1,3 +1,4 @@
+// app/onboarding/welcome.tsx
 import { SignInLink } from '@/components/auth/SignInLink';
 import { Logo } from '@/components/common/Logo';
 import { Button } from '@/components/ui/Button';
@@ -16,6 +17,19 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import { fetchWithAuth } from '../../utils/auth';
+
+interface GuestAuthResponse {
+  success: boolean;
+  accessToken: string;
+  refreshToken: string;
+  accessTokenExpiresIn: number;
+  refreshTokenExpiresIn: number;
+  user: {
+    id: string;
+    isGuest: boolean;
+  };
+}
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -24,18 +38,19 @@ export default function WelcomeScreen() {
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // ✅ Mount zamanı log
   useEffect(() => {
     console.log('WelcomeScreen mounted ✅');
   }, []);
 
   const handleGetStarted = async () => {
-    if (!privacyAccepted) return;
-
-    console.log('Get Started clicked ✅'); // Button click log
+    if (!privacyAccepted) {
+      Alert.alert("Info", "Please accept the Privacy Policy first.");
+      return;
+    }
 
     try {
       setLoading(true);
+      console.log('Get Started clicked ✅');
 
       // Generate or retrieve deviceId
       let deviceId = await SecureStore.getItemAsync('deviceId');
@@ -54,32 +69,38 @@ export default function WelcomeScreen() {
         locale: selectedLanguage === 'az' ? 'az-AZ' : 'en-US',
       };
 
-      const response = await fetch(
+      console.log("Sending guest auth request:", body);
+
+      const response = await fetchWithAuth(
         'https://api.thecookai.app/v1/auth/guest',
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         }
       );
 
-      if (!response.ok) {
-        throw new Error(`Guest login failed (${response.status})`);
+      const data: GuestAuthResponse = await response.json();
+      console.log('Guest auth response:', data);
+
+      if (data.success || (data.accessToken && data.refreshToken)) {
+        // Store tokens securely
+        await SecureStore.setItemAsync('accessToken', data.accessToken);
+        await SecureStore.setItemAsync('refreshToken', data.refreshToken);
+        
+        // Store guest user info
+        if (data.user?.id) {
+          await SecureStore.setItemAsync('userId', data.user.id);
+        }
+
+        console.log('Guest tokens stored ✅');
+
+        // Navigate to onboarding
+        router.replace('/questions/CookingExperienceScreen');
+      } else {
+        throw new Error('Guest authentication failed');
       }
-
-      const data = await response.json();
-      console.log('API Response:', data);
-
-      // Store tokens
-      await SecureStore.setItemAsync('accessToken', data.accessToken);
-      await SecureStore.setItemAsync('refreshToken', data.refreshToken);
-
-      console.log('Tokens stored ✅');
-
-      // Navigate after login
-      router.push('/onboarding/choose-ingredients' as any);
     } catch (error: any) {
-      console.log('Error:', error.message);
+      console.error('Guest login error:', error);
       Alert.alert('Error', error.message || 'Something went wrong');
     } finally {
       setLoading(false);

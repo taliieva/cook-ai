@@ -477,11 +477,17 @@ export default function DishesScreen() {
   };
 
   const handleDishPress = (dish: DishData) => {
-    // Pass the dish data to the detail screen
+    // Get ingredients from navigation params
+    const searchedIngredients = params.ingredients
+      ? JSON.parse(params.ingredients as string)
+      : [];
+
+    // Pass the dish data and searched ingredients to the detail screen
     router.push({
       pathname: `/main/dishes/${dish.id}`,
       params: {
         dishData: JSON.stringify(dish),
+        searchedIngredients: JSON.stringify(searchedIngredients), // Add this line
       },
     });
   };

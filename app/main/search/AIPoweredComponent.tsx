@@ -179,14 +179,31 @@ export default function AIPoweredComponent({
   };
 
   const handleFindDishes = async () => {
-    if (ingredients.length === 0) {
-      Alert.alert(
-        "No Ingredients",
-        "Please add at least one ingredient to find dishes."
-      );
-      return;
-    }
+  //   if (ingredients.length === 0) {
+  //     // Alert.alert(
+  //     //   "No Ingredients",
+  //     //   "Please add at least one ingredient to find dishes."
+  //     // );
+  //     // return;
 
+  //     // Check if user has at least 4 ingredients
+  //  if (ingredients.length < 4) {
+  //   Alert.alert(
+  //     "More Ingredients Needed",
+  //     "Please select minimum 4 ingredients to find the best dishes."
+  //   );
+  //   return;
+  // }
+  //   }
+
+  // Check if user has at least 4 ingredients
+  if (ingredients.length < 4) {
+    Alert.alert(
+      "More Ingredients Needed",
+      "Please select minimum 4 ingredients to find the best dishes."
+    );
+    return;
+  }
     setIsLoading(true);
 
     try {
@@ -204,7 +221,7 @@ export default function AIPoweredComponent({
       console.log("========================");
 
       const response = await fetchWithAuth(
-        "https://api.thecookai.app/v1/recipes",
+        "https://cook-ai-backend-production.up.railway.app/v1/recipes",
         {
           method: "POST",
           body: JSON.stringify(requestBody),
@@ -282,6 +299,34 @@ export default function AIPoweredComponent({
 
   const handleLogout = async () => {
     try {
+      // Get the access token before clearing it
+      const accessToken = await SecureStore.getItemAsync("accessToken");
+      
+      // Call the signout endpoint if we have a token
+      if (accessToken) {
+        try {
+          const response = await fetchWithAuth(
+            "https://cook-ai-backend-production.up.railway.app/v1/auth/signout",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${accessToken}`,
+              },
+            }
+          );
+          
+          // Log the response for debugging
+          console.log("Signout response status:", response.status);
+          
+          // Continue with local cleanup regardless of API response
+          // since we want to log out the user locally even if the API call fails
+        } catch (apiError) {
+          console.error("Error calling signout API:", apiError);
+          // Continue with local cleanup even if API call fails
+        }
+      }
+  
       // Clear all stored auth data
       await SecureStore.deleteItemAsync("accessToken");
       await SecureStore.deleteItemAsync("refreshToken");
@@ -290,7 +335,7 @@ export default function AIPoweredComponent({
       await SecureStore.deleteItemAsync("displayName");
       await SecureStore.deleteItemAsync("appleUserEmail");
       await SecureStore.deleteItemAsync("appleUserName");
-
+  
       // Update state
       setIsLoggedIn(false);
       setUserInfo({
@@ -299,25 +344,91 @@ export default function AIPoweredComponent({
         isGuest: true,
       });
       setUserPlan("free");
-
+  
       console.log("User logged out successfully");
+      
+      // Navigate to onboarding welcome page
+      router.push("/onboarding/welcome");
     } catch (error) {
       console.error("Error during logout:", error);
+      
+      // Even if there's an error, try to clear local data
+      try {
+        await SecureStore.deleteItemAsync("accessToken");
+        await SecureStore.deleteItemAsync("refreshToken");
+        await SecureStore.deleteItemAsync("userId");
+        await SecureStore.deleteItemAsync("userEmail");
+        await SecureStore.deleteItemAsync("displayName");
+        await SecureStore.deleteItemAsync("appleUserEmail");
+        await SecureStore.deleteItemAsync("appleUserName");
+        
+        setIsLoggedIn(false);
+        setUserInfo({
+          displayName: "",
+          email: "",
+          isGuest: true,
+        });
+        setUserPlan("free");
+      } catch (clearError) {
+        console.error("Error clearing local data:", clearError);
+      }
     }
   };
 
   const handleDeleteAccount = async () => {
     try {
-      // You might want to call your API to delete the account first
-      // await fetchWithAuth("https://api.thecookai.app/v1/auth/delete-account", { method: "DELETE" });
-
-      // Clear all stored data
-      await handleLogout();
-
+      // Get the access token before deleting
+      const accessToken = await SecureStore.getItemAsync("accessToken");
+      
+      // Call the delete account endpoint if we have a token
+      if (accessToken) {
+        try {
+          const response = await fetchWithAuth(
+            "https://cook-ai-backend-production.up.railway.app/v1/auth/account",
+            {
+              method: "DELETE",
+              headers: {
+                "Authorization": `Bearer ${accessToken}`,
+              },
+            }
+          );
+          
+          console.log("Delete account response status:", response.status);
+          
+          if (!response.ok) {
+            throw new Error(`Account deletion failed with status: ${response.status}`);
+          }
+        } catch (apiError) {
+          console.error("Error calling delete account API:", apiError);
+          Alert.alert("Error", "Failed to delete account. Please try again.");
+          return; // Don't proceed with local cleanup if API call fails
+        }
+      }
+  
+      // Clear all stored data (similar to logout)
+      await SecureStore.deleteItemAsync("accessToken");
+      await SecureStore.deleteItemAsync("refreshToken");
+      await SecureStore.deleteItemAsync("userId");
+      await SecureStore.deleteItemAsync("userEmail");
+      await SecureStore.deleteItemAsync("displayName");
+      await SecureStore.deleteItemAsync("appleUserEmail");
+      await SecureStore.deleteItemAsync("appleUserName");
+  
+      // Update state
+      setIsLoggedIn(false);
+      setUserInfo({
+        displayName: "",
+        email: "",
+        isGuest: true,
+      });
+      setUserPlan("free");
+  
       setShowDeleteConfirmation(false);
-
-      // Navigate to onboarding
-      router.push("/onboarding");
+  
+      console.log("Account deleted successfully");
+  
+      // Navigate to onboarding welcome page
+      router.push("/onboarding/welcome");
     } catch (error) {
       console.error("Error deleting account:", error);
       Alert.alert("Error", "Failed to delete account. Please try again.");

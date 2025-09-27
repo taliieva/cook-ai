@@ -1,10 +1,10 @@
-import { useTheme } from '@/hooks/useTheme';
-import { Ionicons } from '@expo/vector-icons';
-import MaskedView from '@react-native-masked-view/masked-view';
-import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { useTheme } from "@/hooks/useTheme";
+import { Ionicons } from "@expo/vector-icons";
+import MaskedView from "@react-native-masked-view/masked-view";
+import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
   Dimensions,
   ImageBackground,
@@ -14,10 +14,10 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
-} from 'react-native';
+  View,
+} from "react-native";
 
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get("window");
 
 // Define types for our dish data matching the actual API response
 interface DishDetail {
@@ -53,23 +53,77 @@ export default function DishDetailScreen() {
     parseDishData();
   }, []);
 
+  const convertSearchedToIngredients = (
+    searchedIngredients: string[]
+  ): Ingredient[] => {
+    const ingredientIcons: { [key: string]: string } = {
+      tomato: "🍅",
+      tomatoes: "🍅",
+      egg: "🥚",
+      eggs: "🥚",
+      cheese: "🧀",
+      onion: "🧅",
+      onions: "🧅",
+      garlic: "🧄",
+      pepper: "🌶️",
+      "bell pepper": "🫑",
+      salt: "🧂",
+      oil: "🫒",
+      "olive oil": "🫒",
+      butter: "🧈",
+      pasta: "🍝",
+      spaghetti: "🍝",
+      rice: "🍚",
+      chicken: "🐔",
+      beef: "🥩",
+      fish: "🐟",
+      milk: "🥛",
+      flour: "🌾",
+      sugar: "🍯",
+      lemon: "🍋",
+      carrot: "🥕",
+      carrots: "🥕",
+      potato: "🥔",
+      potatoes: "🥔",
+      mushroom: "🍄",
+      mushrooms: "🍄",
+    };
+
+    return searchedIngredients.map((ingredient) => ({
+      name: ingredient,
+      amount: "as needed",
+      icon: ingredientIcons[ingredient.toLowerCase()] || "🥘",
+    }));
+  };
+
   const parseDishData = () => {
     try {
       console.log("Received dish params:", params);
-      
+
       if (params.dishData) {
         const parsedDish = JSON.parse(params.dishData as string);
         console.log("Parsed dish:", parsedDish);
-        
+
         setDishData(parsedDish);
-        
-        // Generate ingredients from steps or create default ones
-        const generatedIngredients = generateIngredientsFromSteps(parsedDish.steps || []);
+
+        // Use searched ingredients if available, otherwise generate from steps
+        let generatedIngredients: Ingredient[] = [];
+        if (params.searchedIngredients) {
+          const searchedIngredients = JSON.parse(
+            params.searchedIngredients as string
+          );
+          generatedIngredients =
+            convertSearchedToIngredients(searchedIngredients);
+        } else {
+          generatedIngredients = generateIngredientsFromSteps(
+            parsedDish.steps || []
+          );
+        }
+
         setIngredients(generatedIngredients);
       }
     } catch (error) {
       console.error("Error parsing dish data:", error);
-      // Set fallback data if parsing fails
       setFallbackData();
     }
   };
@@ -77,68 +131,69 @@ export default function DishDetailScreen() {
   const setFallbackData = () => {
     setDishData({
       id: 1,
-      name: 'Delicious Recipe',
-      culture: 'International',
-      image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-      description: 'A wonderful dish made with fresh ingredients and love.',
-      prepTime: '25 min',
-      servings: '4 people',
-      difficulty: 'Medium',
+      name: "Delicious Recipe",
+      culture: "International",
+      image:
+        "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
+      description: "A wonderful dish made with fresh ingredients and love.",
+      prepTime: "25 min",
+      servings: "4 people",
+      difficulty: "Medium",
       rating: 4.5,
       calories: 350,
       outdoorCost: 15,
       homeCost: 6,
       moneySaved: 9,
-      shortDescription: 'Quick and easy recipe',
-      steps: ['Prepare ingredients', 'Cook and serve'],
-      dishType: 'Main Course'
+      shortDescription: "Quick and easy recipe",
+      steps: ["Prepare ingredients", "Cook and serve"],
+      dishType: "Main Course",
     });
     setIngredients([
-      { name: 'Fresh ingredients', amount: 'as needed', icon: '🥗' }
+      { name: "Fresh ingredients", amount: "as needed", icon: "🥗" },
     ]);
   };
 
   const generateIngredientsFromSteps = (steps: string[]): Ingredient[] => {
     // This is a simple approach - in a real app, ingredients should come from the API
     const commonIngredients = [
-      { keywords: ['tomato', 'tomatoes'], icon: '🍅' },
-      { keywords: ['egg', 'eggs'], icon: '🥚' },
-      { keywords: ['cheese'], icon: '🧀' },
-      { keywords: ['onion', 'onions'], icon: '🧅' },
-      { keywords: ['garlic'], icon: '🧄' },
-      { keywords: ['pepper', 'black pepper'], icon: '🌶️' },
-      { keywords: ['salt'], icon: '🧂' },
-      { keywords: ['oil', 'olive oil'], icon: '🫒' },
-      { keywords: ['butter'], icon: '🧈' },
-      { keywords: ['pasta', 'spaghetti'], icon: '🍝' },
-      { keywords: ['rice'], icon: '🍚' },
-      { keywords: ['chicken'], icon: '🐔' },
-      { keywords: ['beef'], icon: '🥩' },
-      { keywords: ['fish'], icon: '🐟' },
-      { keywords: ['milk'], icon: '🥛' },
-      { keywords: ['flour'], icon: '🌾' },
-      { keywords: ['sugar'], icon: '🍯' },
-      { keywords: ['lemon'], icon: '🍋' },
-      { keywords: ['herb', 'herbs', 'parsley', 'basil'], icon: '🌿' },
-      { keywords: ['spice', 'spices'], icon: '🧄' }
+      { keywords: ["tomato", "tomatoes"], icon: "🍅" },
+      { keywords: ["egg", "eggs"], icon: "🥚" },
+      { keywords: ["cheese"], icon: "🧀" },
+      { keywords: ["onion", "onions"], icon: "🧅" },
+      { keywords: ["garlic"], icon: "🧄" },
+      { keywords: ["pepper", "black pepper"], icon: "🌶️" },
+      { keywords: ["salt"], icon: "🧂" },
+      { keywords: ["oil", "olive oil"], icon: "🫒" },
+      { keywords: ["butter"], icon: "🧈" },
+      { keywords: ["pasta", "spaghetti"], icon: "🍝" },
+      { keywords: ["rice"], icon: "🍚" },
+      { keywords: ["chicken"], icon: "🐔" },
+      { keywords: ["beef"], icon: "🥩" },
+      { keywords: ["fish"], icon: "🐟" },
+      { keywords: ["milk"], icon: "🥛" },
+      { keywords: ["flour"], icon: "🌾" },
+      { keywords: ["sugar"], icon: "🍯" },
+      { keywords: ["lemon"], icon: "🍋" },
+      { keywords: ["herb", "herbs", "parsley", "basil"], icon: "🌿" },
+      { keywords: ["spice", "spices"], icon: "🧄" },
     ];
 
     const foundIngredients: Ingredient[] = [];
-    const stepsText = steps.join(' ').toLowerCase();
+    const stepsText = steps.join(" ").toLowerCase();
 
-    commonIngredients.forEach(ingredient => {
-      const found = ingredient.keywords.some(keyword => 
+    commonIngredients.forEach((ingredient) => {
+      const found = ingredient.keywords.some((keyword) =>
         stepsText.includes(keyword.toLowerCase())
       );
-      
+
       if (found) {
-        const matchedKeyword = ingredient.keywords.find(keyword => 
+        const matchedKeyword = ingredient.keywords.find((keyword) =>
           stepsText.includes(keyword.toLowerCase())
         );
         foundIngredients.push({
           name: matchedKeyword || ingredient.keywords[0],
-          amount: 'as needed',
-          icon: ingredient.icon
+          amount: "as needed",
+          icon: ingredient.icon,
         });
       }
     });
@@ -146,9 +201,9 @@ export default function DishDetailScreen() {
     // If no ingredients found, add some defaults
     if (foundIngredients.length === 0) {
       foundIngredients.push(
-        { name: 'Main ingredients', amount: 'as needed', icon: '🥘' },
-        { name: 'Seasonings', amount: 'to taste', icon: '🧂' },
-        { name: 'Fresh herbs', amount: 'optional', icon: '🌿' }
+        { name: "Main ingredients", amount: "as needed", icon: "🥘" },
+        { name: "Seasonings", amount: "to taste", icon: "🧂" },
+        { name: "Fresh herbs", amount: "optional", icon: "🌿" }
       );
     }
 
@@ -157,52 +212,53 @@ export default function DishDetailScreen() {
 
   const getDifficultyFromSteps = (steps: string[]): string => {
     const stepCount = steps.length;
-    if (stepCount <= 3) return 'Easy';
-    if (stepCount <= 5) return 'Medium';
-    return 'Hard';
+    if (stepCount <= 3) return "Easy";
+    if (stepCount <= 5) return "Medium";
+    return "Hard";
   };
 
   const getServingsEstimate = (portionSize: string): string => {
     // Convert API's EstimatedPortionSize to servings
-    if (portionSize && typeof portionSize === 'string') {
+    if (portionSize && typeof portionSize === "string") {
       const size = portionSize.toLowerCase();
-      if (size.includes('large')) {
-        return '4-6 people';
-      } else if (size.includes('medium')) {
-        return '3-4 people';
-      } else if (size.includes('small')) {
-        return '1-2 people';
+      if (size.includes("large")) {
+        return "4-6 people";
+      } else if (size.includes("medium")) {
+        return "3-4 people";
+      } else if (size.includes("small")) {
+        return "1-2 people";
       }
     }
-    return '2-3 people';
+    return "2-3 people";
   };
 
   const generateRating = (culture: string, dishType: string): number => {
     // Generate a realistic rating based on cuisine popularity
     const baseRating = 4.2;
     const cultureBonus: { [key: string]: number } = {
-      'Italian': 0.4,
-      'Japanese': 0.3,
-      'French': 0.3,
-      'Indian': 0.2,
-      'Mexican': 0.2,
-      'Chinese': 0.1,
-      'American': 0.0,
-      'Thai': 0.3
-    };
-    
-    const typeBonus: { [key: string]: number } = {
-      'Breakfast': 0.1,
-      'Main Course': 0.2,
-      'Dessert': 0.3,
-      'Appetizer': 0.1
+      Italian: 0.4,
+      Japanese: 0.3,
+      French: 0.3,
+      Indian: 0.2,
+      Mexican: 0.2,
+      Chinese: 0.1,
+      American: 0.0,
+      Thai: 0.3,
     };
 
-    const rating = baseRating + 
-      (cultureBonus[culture] || 0) + 
-      (typeBonus[dishType] || 0) + 
-      (Math.random() * 0.3);
-    
+    const typeBonus: { [key: string]: number } = {
+      Breakfast: 0.1,
+      "Main Course": 0.2,
+      Dessert: 0.3,
+      Appetizer: 0.1,
+    };
+
+    const rating =
+      baseRating +
+      (cultureBonus[culture] || 0) +
+      (typeBonus[dishType] || 0) +
+      Math.random() * 0.3;
+
     return Math.min(5.0, Math.round(rating * 10) / 10);
   };
 
@@ -212,7 +268,7 @@ export default function DishDetailScreen() {
 
   const handleStartCooking = () => {
     // Navigate to cooking instructions or timer
-    console.log('Start cooking process');
+    console.log("Start cooking process");
     // In a real app, you might navigate to a step-by-step cooking guide
     // router.push(`/main/cooking/${dishData?.id}`);
   };
@@ -220,21 +276,40 @@ export default function DishDetailScreen() {
   const handleAddToFavorites = () => {
     setIsFavorite(!isFavorite);
     // In a real app, you would save this to user preferences/backend
-    console.log(`${isFavorite ? 'Removed from' : 'Added to'} favorites:`, dishData?.name);
+    console.log(
+      `${isFavorite ? "Removed from" : "Added to"} favorites:`,
+      dishData?.name
+    );
   };
 
   const renderIngredient = (ingredient: Ingredient, index: number) => {
     return (
-      <View key={index} style={[styles.ingredientItem, { 
-        backgroundColor: theme.colors.background.secondary + '80',
-        borderColor: theme.colors.border + '40'
-      }]}>
+      <View
+        key={index}
+        style={[
+          styles.ingredientItem,
+          {
+            backgroundColor: theme.colors.background.secondary + "80",
+            borderColor: theme.colors.border + "40",
+          },
+        ]}
+      >
         <Text style={styles.ingredientIcon}>{ingredient.icon}</Text>
         <View style={styles.ingredientInfo}>
-          <Text style={[styles.ingredientName, { color: theme.colors.text.primary }]}>
+          <Text
+            style={[
+              styles.ingredientName,
+              { color: theme.colors.text.primary },
+            ]}
+          >
             {ingredient.name}
           </Text>
-          <Text style={[styles.ingredientAmount, { color: theme.colors.text.secondary }]}>
+          <Text
+            style={[
+              styles.ingredientAmount,
+              { color: theme.colors.text.secondary },
+            ]}
+          >
             {ingredient.amount}
           </Text>
         </View>
@@ -248,7 +323,8 @@ export default function DishDetailScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Instructions</Text>
           <Text style={styles.description}>
-            Detailed cooking instructions will be available when you start cooking.
+            Detailed cooking instructions will be available when you start
+            cooking.
           </Text>
         </View>
       );
@@ -262,21 +338,26 @@ export default function DishDetailScreen() {
             <View style={styles.stepNumber}>
               <Text style={styles.stepNumberText}>{index + 1}</Text>
             </View>
-            <Text style={[styles.stepText, { color: '#FFFFFF' }]}>
-              {step}
-            </Text>
+            <Text style={[styles.stepText, { color: "#FFFFFF" }]}>{step}</Text>
           </View>
         ))}
       </View>
     );
   };
 
-      // Don't render until we have dish data
+  // Don't render until we have dish data
   if (!dishData) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
+      <View
+        style={[
+          styles.container,
+          { backgroundColor: theme.colors.background.primary },
+        ]}
+      >
         <SafeAreaView style={styles.loadingContainer}>
-          <Text style={[styles.loadingText, { color: theme.colors.text.primary }]}>
+          <Text
+            style={[styles.loadingText, { color: theme.colors.text.primary }]}
+          >
             Loading dish details...
           </Text>
         </SafeAreaView>
@@ -286,8 +367,12 @@ export default function DishDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="transparent"
+        translucent
+      />
+
       {/* Background Image with Blur */}
       <ImageBackground
         source={{ uri: dishData.image }}
@@ -299,7 +384,7 @@ export default function DishDetailScreen() {
           style={styles.maskedBlur}
           maskElement={
             <LinearGradient
-              colors={['transparent', 'black', 'black']}
+              colors={["transparent", "black", "black"]}
               style={styles.mask}
               locations={[0, 0.3, 1]}
             />
@@ -310,7 +395,7 @@ export default function DishDetailScreen() {
 
         {/* Dark gradient for better readability */}
         <LinearGradient
-          colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0.9)']}
+          colors={["rgba(0,0,0,0.3)", "rgba(0,0,0,0.7)", "rgba(0,0,0,0.9)"]}
           style={styles.darkOverlay}
           locations={[0, 0.5, 1]}
         />
@@ -322,18 +407,21 @@ export default function DishDetailScreen() {
             <TouchableOpacity style={styles.headerButton} onPress={handleBack}>
               <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
             </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.headerButton} onPress={handleAddToFavorites}>
-              <Ionicons 
-                name={isFavorite ? "heart" : "heart-outline"} 
-                size={24} 
-                color={isFavorite ? "#FF3366" : "#FFFFFF"} 
+
+            <TouchableOpacity
+              style={styles.headerButton}
+              onPress={handleAddToFavorites}
+            >
+              <Ionicons
+                name={isFavorite ? "heart" : "heart-outline"}
+                size={24}
+                color={isFavorite ? "#FF3366" : "#FFFFFF"}
               />
             </TouchableOpacity>
           </View>
 
           {/* Scrollable Content */}
-          <ScrollView 
+          <ScrollView
             style={styles.scrollContent}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContainer}
@@ -341,12 +429,17 @@ export default function DishDetailScreen() {
             {/* Culture Tag */}
             <View style={styles.cultureContainer}>
               <LinearGradient
-                colors={[theme.colors.accent.primary, theme.colors.accent.gradientEnd]}
+                colors={[
+                  theme.colors.accent.primary,
+                  theme.colors.accent.gradientEnd,
+                ]}
                 style={styles.cultureTag}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
               >
-                <Text style={styles.cultureText}>{dishData.culture} Cuisine</Text>
+                <Text style={styles.cultureText}>
+                  {dishData.culture} Cuisine
+                </Text>
               </LinearGradient>
             </View>
 
@@ -389,8 +482,10 @@ export default function DishDetailScreen() {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>About this dish</Text>
               <Text style={styles.description}>
-                {dishData.shortDescription || 
-                 `This delicious ${dishData.culture} ${dishData.dishType.toLowerCase()} is perfect for any occasion. Made with fresh ingredients and traditional techniques, it brings authentic flavors to your table.`}
+                {dishData.shortDescription ||
+                  `This delicious ${
+                    dishData.culture
+                  } ${dishData.dishType.toLowerCase()} is perfect for any occasion. Made with fresh ingredients and traditional techniques, it brings authentic flavors to your table.`}
               </Text>
             </View>
 
@@ -398,10 +493,14 @@ export default function DishDetailScreen() {
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Ingredients</Text>
-                <Text style={styles.ingredientCount}>({ingredients.length} items)</Text>
+                <Text style={styles.ingredientCount}>
+                  ({ingredients.length} items)
+                </Text>
               </View>
               <View style={styles.ingredientsList}>
-                {ingredients.map((ingredient, index) => renderIngredient(ingredient, index))}
+                {ingredients.map((ingredient, index) =>
+                  renderIngredient(ingredient, index)
+                )}
               </View>
             </View>
 
@@ -410,14 +509,24 @@ export default function DishDetailScreen() {
 
             {/* Start Cooking Button */}
             <View style={styles.buttonContainer}>
-              <TouchableOpacity style={styles.startCookingButton} onPress={handleStartCooking}>
+              <TouchableOpacity
+                style={styles.startCookingButton}
+                onPress={handleStartCooking}
+              >
                 <LinearGradient
-                  colors={[theme.colors.accent.gradientStart, theme.colors.accent.gradientEnd]}
+                  colors={[
+                    theme.colors.accent.gradientStart,
+                    theme.colors.accent.gradientEnd,
+                  ]}
                   style={styles.buttonGradient}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                 >
-                  <Ionicons name="play-circle-outline" size={24} color="#FFFFFF" />
+                  <Ionicons
+                    name="play-circle-outline"
+                    size={24}
+                    color="#FFFFFF"
+                  />
                   <Text style={styles.buttonText}>Start Cooking</Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -438,20 +547,20 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     fontSize: 18,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   backgroundImage: {
     flex: 1,
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   maskedBlur: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
@@ -464,7 +573,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   darkOverlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
@@ -474,8 +583,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingTop: 10,
   },
@@ -483,10 +592,10 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backdropFilter: 'blur(10px)',
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+    backdropFilter: "blur(10px)",
   },
   scrollContent: {
     flex: 1,
@@ -496,7 +605,7 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   cultureContainer: {
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
     marginBottom: 15,
   },
   cultureTag: {
@@ -505,56 +614,56 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   cultureText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   dishName: {
     fontSize: 32,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontWeight: "700",
+    color: "#FFFFFF",
     marginBottom: 15,
-    textShadowColor: 'rgba(0, 0, 0, 0.7)',
+    textShadowColor: "rgba(0, 0, 0, 0.7)",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 8,
   },
   infoRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: 15,
-    flexWrap: 'wrap',
+    flexWrap: "wrap",
   },
   infoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginRight: 20,
     marginBottom: 8,
   },
   infoText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     marginLeft: 5,
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowColor: "rgba(0, 0, 0, 0.5)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
   statsRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: 25,
-    flexWrap: 'wrap',
+    flexWrap: "wrap",
   },
   statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginRight: 15,
     marginBottom: 8,
   },
   statText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: "500",
     marginLeft: 4,
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowColor: "rgba(0, 0, 0, 0.5)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
@@ -562,29 +671,29 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
+    flexDirection: "row",
+    alignItems: "baseline",
     marginBottom: 15,
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
     marginBottom: 10,
-    textShadowColor: 'rgba(0, 0, 0, 0.7)',
+    textShadowColor: "rgba(0, 0, 0, 0.7)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
   ingredientCount: {
     fontSize: 14,
-    color: '#CCCCCC',
+    color: "#CCCCCC",
     marginLeft: 8,
   },
   description: {
     fontSize: 16,
     lineHeight: 24,
-    color: '#FFFFFF',
-    textShadowColor: 'rgba(0, 0, 0, 0.7)',
+    color: "#FFFFFF",
+    textShadowColor: "rgba(0, 0, 0, 0.7)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
@@ -592,12 +701,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   ingredientItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 15,
     borderRadius: 15,
     borderWidth: 1,
-    backdropFilter: 'blur(10px)',
+    backdropFilter: "blur(10px)",
   },
   ingredientIcon: {
     fontSize: 24,
@@ -608,37 +717,37 @@ const styles = StyleSheet.create({
   },
   ingredientName: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
     marginBottom: 2,
   },
   ingredientAmount: {
     fontSize: 14,
   },
   instructionStep: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: 15,
-    alignItems: 'flex-start',
+    alignItems: "flex-start",
   },
   stepNumber: {
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 15,
     marginTop: 2,
   },
   stepNumberText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   stepText: {
     flex: 1,
     fontSize: 16,
     lineHeight: 24,
-    textShadowColor: 'rgba(0, 0, 0, 0.7)',
+    textShadowColor: "rgba(0, 0, 0, 0.7)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
@@ -647,24 +756,24 @@ const styles = StyleSheet.create({
   },
   startCookingButton: {
     borderRadius: 25,
-    overflow: 'hidden',
-    shadowColor: '#000',
+    overflow: "hidden",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
   },
   buttonGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 18,
     paddingHorizontal: 30,
   },
   buttonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     marginLeft: 10,
   },
   bottomPadding: {

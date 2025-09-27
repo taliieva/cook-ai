@@ -1,3 +1,4 @@
+// app/auth/sign-in.tsx
 import { Logo } from "@/components/common/Logo";
 import { Button } from "@/components/ui/Button";
 import { useTheme } from "@/hooks/useTheme";
@@ -44,6 +45,7 @@ interface AuthResponse {
     refreshToken: string;
     refreshTokenExpiresIn: number;
     isNewUser: boolean;
+    hasCompletedOnboarding?: boolean; // Add this field
   };
   requestId: string;
 }
@@ -51,7 +53,6 @@ interface AuthResponse {
 export default function SignInScreen() {
   const router = useRouter();
   const theme = useTheme();
-  const [selectedLanguage, setSelectedLanguage] = useState("en");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
@@ -172,7 +173,7 @@ export default function SignInScreen() {
     userData: UserData
   ) => {
     try {
-      const endpoint = `https://api.thecookai.app/v1/auth/convert/${provider}`;
+      const endpoint = `https://cook-ai-backend-production.up.railway.app/v1/auth/convert/${provider}`;
 
       const requestBody = {
         token,
@@ -194,21 +195,20 @@ export default function SignInScreen() {
         await SecureStore.setItemAsync("accessToken", data.data.accessToken);
         await SecureStore.setItemAsync("refreshToken", data.data.refreshToken);
 
-        // Store user info if needed
+        // Store user info
         await SecureStore.setItemAsync("userId", data.data.user.id);
         await SecureStore.setItemAsync("userEmail", data.data.user.email);
-        await SecureStore.setItemAsync(
-          "displayName",
-          data.data.user.displayName
-        );
+        await SecureStore.setItemAsync("displayName", data.data.user.displayName);
 
         console.log("Authentication successful, navigating...");
 
-        // Navigate based on whether user is new or returning
-        if (data.data.isNewUser) {
-          router.push("/onboarding/choose-ingredients");
+        // Navigate based on user status and onboarding completion
+        if (data.data.isNewUser || !data.data.hasCompletedOnboarding) {
+          // New user or hasn't completed onboarding
+          router.replace("/onboarding/choose-ingredients" as any);
         } else {
-          router.push("/onboarding/ingredients-search"); // Adjust route as needed
+          // Returning user with completed onboarding
+          router.replace("/onboarding/ingredients-search" as any);
         }
       } else {
         throw new Error("Authentication failed");
@@ -239,26 +239,6 @@ export default function SignInScreen() {
         barStyle={theme.isDark ? "light-content" : "dark-content"}
         backgroundColor={theme.colors.background.primary}
       />
-
-      {/* Header with back button */}
-      {/* <View style={styles.header}>
-        <TouchableOpacity
-          style={[
-            styles.backButton,
-            {
-              backgroundColor: theme.colors.background.secondary,
-              borderColor: theme.colors.border,
-            },
-          ]}
-          onPress={handleBack}
-        >
-          <Ionicons
-            name="chevron-back"
-            size={24}
-            color={theme.colors.text.primary}
-          />
-        </TouchableOpacity>
-      </View> */}
 
       {/* Center Section with Logo */}
       <View style={styles.centerSection}>
@@ -360,27 +340,6 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 10,
-  },
-  backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   centerSection: {
     flex: 1,
