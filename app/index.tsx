@@ -55,45 +55,51 @@ const SplashScreen = ({ onAnimationComplete }: any) => {
   }, []);
 
   // ✅ New function to handle auth check and navigation
-  const checkAuthAndStartAnimations = async () => {
-    try {
-      console.log("🚀 Splash screen - checking auth state...");
-      
-      // Check authentication state
-      const authResult = await validateAuthState();
-      console.log("Auth validation result:", authResult);
-      
-      let targetRoute = "/onboarding/welcome"; // Default for new users or expired tokens
-      
-      if (authResult.isValid && authResult.userData) {
-        // User has valid authentication - go directly to main app
-        console.log("✅ User has valid token, going directly to ingredients-search");
-        targetRoute = "/onboarding/ingredients-search";
-        console.log("✅ Target route set to:", targetRoute);
-      } else {
-        // No token or expired token - send to welcome page for authentication
-        console.log("❌ No valid token or expired token, going to welcome page");
+  // ✅ New function to handle auth check and navigation
+const checkAuthAndStartAnimations = async () => {
+  try {
+    console.log("🚀 Splash screen - checking auth state...");
+    
+    // Check authentication state
+    const authResult = await validateAuthState();
+    console.log("Auth validation result:", authResult);
+    
+    let targetRoute = "/onboarding/welcome"; // Default for new users, expired tokens, or guests
+    
+    if (authResult.isValid && authResult.userData) {
+      // Check if user is a guest
+      if (authResult.userData.isGuest) {
+        // Guest users should go to welcome screen for proper authentication
+        console.log("👤 User is a guest, sending to welcome screen for authentication");
         targetRoute = "/onboarding/welcome";
-        console.log("❌ Target route set to:", targetRoute);
+      } else {
+        // Authenticated non-guest user - go directly to search page
+        console.log("✅ User is authenticated (not guest), going directly to ingredients-search");
+        targetRoute = "/onboarding/ingredients-search";
       }
-      
-      setNavigationTarget(targetRoute);
-      console.log("🎯 navigationTarget state updated to:", targetRoute);
-      setAuthChecked(true);
-      
-      // Start animations after auth check and pass the target route directly
-      startAnimationSequence(targetRoute);
-      
-    } catch (error) {
-      console.error("Error during auth check:", error);
-      // On error, clear any corrupted auth data and go to welcome
-      await clearAuthTokens();
-      const fallbackRoute = "/onboarding/welcome";
-      setNavigationTarget(fallbackRoute);
-      setAuthChecked(true);
-      startAnimationSequence(fallbackRoute);
+    } else {
+      // No token or expired token - send to welcome page for authentication
+      console.log("❌ No valid token or expired token, going to welcome page");
+      targetRoute = "/onboarding/welcome";
     }
-  };
+    
+    setNavigationTarget(targetRoute);
+    console.log("🎯 navigationTarget state updated to:", targetRoute);
+    setAuthChecked(true);
+    
+    // Start animations after auth check and pass the target route directly
+    startAnimationSequence(targetRoute);
+    
+  } catch (error) {
+    console.error("Error during auth check:", error);
+    // On error, clear any corrupted auth data and go to welcome
+    await clearAuthTokens();
+    const fallbackRoute = "/onboarding/welcome";
+    setNavigationTarget(fallbackRoute);
+    setAuthChecked(true);
+    startAnimationSequence(fallbackRoute);
+  }
+};
 
   const startTypewriterEffect = (
     text: string,
@@ -435,7 +441,7 @@ const SplashScreen = ({ onAnimationComplete }: any) => {
         >
           <View style={styles.logo}>
             <Image
-              source={require("../assets/images/logo-light.png")}
+              source={require("../assets/images/dark-logo.png")}
               style={styles.logoImage}
               resizeMode="contain"
             />
@@ -605,8 +611,9 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   logoImage: {
-    width: 80,
+    width: 90,
     height: 70,
+    borderRadius: 30
   },
   logoGlow: {
     position: "absolute",

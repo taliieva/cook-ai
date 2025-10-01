@@ -16,8 +16,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { fetchWithAuth } from "../../../utils/auth";
-
+// Added these imports:
+import {
+  clearAuthTokens,
+  fetchWithAuth,
+  validateAuthState,
+} from "../../../utils/auth";
 const { width, height } = Dimensions.get("window");
 
 // Mock countries data with flags
@@ -119,6 +123,8 @@ export default function AIPoweredComponent({
   const [showModeSelector, setShowModeSelector] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  // Added new state variable:
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   // Dynamic auth state
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -135,33 +141,61 @@ export default function AIPoweredComponent({
   }, []);
 
   const checkAuthStatus = async () => {
+    setIsCheckingAuth(true);
     try {
-      const accessToken = await SecureStore.getItemAsync("accessToken");
-      const displayName = await SecureStore.getItemAsync("displayName");
-      const userEmail = await SecureStore.getItemAsync("userEmail");
+      console.log("🔍 Checking authentication status...");
 
-      if (accessToken && displayName && userEmail) {
+      // Use the comprehensive validation from utils/auth.ts
+      const authResult = await validateAuthState();
+
+      console.log("Auth validation result:", authResult);
+
+      if (authResult.isValid && authResult.userData) {
+        // User is properly authenticated
         setIsLoggedIn(true);
         setUserInfo({
-          displayName,
-          email: userEmail,
-          isGuest: false,
+          displayName:
+            authResult.userData.displayName ||
+            authResult.userData.email ||
+            "User",
+          email: authResult.userData.email,
+          isGuest: authResult.userData.isGuest,
         });
 
-        // You might want to fetch subscription status from your API here
-        // For now, assuming free plan
-        setUserPlan("free");
+        // Set the user plan based on the subscription status from userData
+        setUserPlan(authResult.userData.subscriptionStatus || "free");
+
+        console.log("✅ User is authenticated:", {
+          displayName: authResult.userData.displayName,
+          email: authResult.userData.email,
+          isGuest: authResult.userData.isGuest,
+          plan: authResult.userData.subscriptionStatus,
+        });
       } else {
+        // User is not authenticated or validation failed
         setIsLoggedIn(false);
         setUserInfo({
           displayName: "",
           email: "",
           isGuest: true,
         });
+        setUserPlan("free");
+
+        console.log("❌ User is not authenticated");
       }
     } catch (error) {
       console.error("Error checking auth status:", error);
+
+      // Fallback to guest state on error
       setIsLoggedIn(false);
+      setUserInfo({
+        displayName: "",
+        email: "",
+        isGuest: true,
+      });
+      setUserPlan("free");
+    } finally {
+      setIsCheckingAuth(false);
     }
   };
 
@@ -178,34 +212,21 @@ export default function AIPoweredComponent({
     );
   };
 
+  // Add a function to refresh auth status (useful for when user logs in from another screen)
+  const refreshAuthStatus = async () => {
+    await checkAuthStatus();
+  };
   const handleFindDishes = async () => {
-  //   if (ingredients.length === 0) {
-  //     // Alert.alert(
-  //     //   "No Ingredients",
-  //     //   "Please add at least one ingredient to find dishes."
-  //     // );
-  //     // return;
-
-  //     // Check if user has at least 4 ingredients
-  //  if (ingredients.length < 4) {
-  //   Alert.alert(
-  //     "More Ingredients Needed",
-  //     "Please select minimum 4 ingredients to find the best dishes."
-  //   );
-  //   return;
-  // }
-  //   }
-
-  // Check if user has at least 4 ingredients
-  if (ingredients.length < 4) {
-    Alert.alert(
-      "More Ingredients Needed",
-      "Please select minimum 4 ingredients to find the best dishes."
-    );
-    return;
-  }
+    if (ingredients.length < 4) {
+      Alert.alert(
+        "More Ingredients Needed",
+        "Please select minimum 4 ingredients to find the best dishes."
+      );
+      return;
+    }
+    
     setIsLoading(true);
-
+  
     try {
       const requestBody = {
         ingredients: ingredients,
@@ -214,12 +235,12 @@ export default function AIPoweredComponent({
         deviceLanguage: "en-US",
         dietType: selectedMode.code,
       };
-
+  
       console.log("=== API Request Debug ===");
       console.log("Endpoint:", "https://api.thecookai.app/v1/recipes");
       console.log("Request body:", JSON.stringify(requestBody, null, 2));
       console.log("========================");
-
+  
       const response = await fetchWithAuth(
         "https://cook-ai-backend-production.up.railway.app/v1/recipes",
         {
@@ -227,32 +248,35 @@ export default function AIPoweredComponent({
           body: JSON.stringify(requestBody),
         }
       );
-
+  
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
+  
       const data = await response.json();
-
+  
       console.log("Full response:", JSON.stringify(data, null, 2));
-
+      console.log("dishData extracted:", JSON.stringify(data.dishData, null, 2)); // Add this debug line
+  
       if (!data.dishData || !data.dishData.DishSuggestions) {
         throw new Error("Invalid response structure from API");
       }
-
+  
+      // ✅ This is correct - you're passing data.dishData
       router.push({
         pathname: "/main/dishes",
         params: {
           country: selectedCountry.code,
           mode: selectedMode.code,
           ingredients: JSON.stringify(ingredients),
-          dishData: JSON.stringify(data.dishData),
+          dishData: JSON.stringify(data.dishData), // ✅ Correct!
           localizedSummary: JSON.stringify(data.localizedSummary || {}),
           requestId: data.requestId || "",
           searchId: data.searchId || "",
           usageInfo: JSON.stringify(data.usageInfo || {}),
         },
       });
+      
     } catch (error) {
       console.error("Error fetching dishes:", error);
       Alert.alert(
@@ -263,6 +287,20 @@ export default function AIPoweredComponent({
       setIsLoading(false);
     }
   };
+
+  // Show loading spinner while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={theme.colors.accent.primary} />
+        <Text
+          style={[styles.loadingText, { color: theme.colors.text.secondary }]}
+        >
+          Checking authentication...
+        </Text>
+      </View>
+    );
+  }
 
   const handleProfileMenuOption = (option: any) => {
     setShowProfileMenu(false);
@@ -301,7 +339,7 @@ export default function AIPoweredComponent({
     try {
       // Get the access token before clearing it
       const accessToken = await SecureStore.getItemAsync("accessToken");
-      
+
       // Call the signout endpoint if we have a token
       if (accessToken) {
         try {
@@ -311,32 +349,21 @@ export default function AIPoweredComponent({
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${accessToken}`,
+                Authorization: `Bearer ${accessToken}`,
               },
             }
           );
-          
-          // Log the response for debugging
+
           console.log("Signout response status:", response.status);
-          
-          // Continue with local cleanup regardless of API response
-          // since we want to log out the user locally even if the API call fails
         } catch (apiError) {
           console.error("Error calling signout API:", apiError);
-          // Continue with local cleanup even if API call fails
         }
       }
-  
-      // Clear all stored auth data
-      await SecureStore.deleteItemAsync("accessToken");
-      await SecureStore.deleteItemAsync("refreshToken");
-      await SecureStore.deleteItemAsync("userId");
-      await SecureStore.deleteItemAsync("userEmail");
-      await SecureStore.deleteItemAsync("displayName");
-      await SecureStore.deleteItemAsync("appleUserEmail");
-      await SecureStore.deleteItemAsync("appleUserName");
-  
-      // Update state
+
+      // Use the auth utility to clear tokens
+      await clearAuthTokens();
+
+      // Update local state
       setIsLoggedIn(false);
       setUserInfo({
         displayName: "",
@@ -344,43 +371,29 @@ export default function AIPoweredComponent({
         isGuest: true,
       });
       setUserPlan("free");
-  
+
       console.log("User logged out successfully");
-      
+
       // Navigate to onboarding welcome page
       router.push("/onboarding/welcome");
     } catch (error) {
       console.error("Error during logout:", error);
-      
-      // Even if there's an error, try to clear local data
-      try {
-        await SecureStore.deleteItemAsync("accessToken");
-        await SecureStore.deleteItemAsync("refreshToken");
-        await SecureStore.deleteItemAsync("userId");
-        await SecureStore.deleteItemAsync("userEmail");
-        await SecureStore.deleteItemAsync("displayName");
-        await SecureStore.deleteItemAsync("appleUserEmail");
-        await SecureStore.deleteItemAsync("appleUserName");
-        
-        setIsLoggedIn(false);
-        setUserInfo({
-          displayName: "",
-          email: "",
-          isGuest: true,
-        });
-        setUserPlan("free");
-      } catch (clearError) {
-        console.error("Error clearing local data:", clearError);
-      }
+
+      // Fallback: force clear local state even if API calls fail
+      setIsLoggedIn(false);
+      setUserInfo({
+        displayName: "",
+        email: "",
+        isGuest: true,
+      });
+      setUserPlan("free");
     }
   };
 
   const handleDeleteAccount = async () => {
     try {
-      // Get the access token before deleting
       const accessToken = await SecureStore.getItemAsync("accessToken");
-      
-      // Call the delete account endpoint if we have a token
+
       if (accessToken) {
         try {
           const response = await fetchWithAuth(
@@ -388,33 +401,29 @@ export default function AIPoweredComponent({
             {
               method: "DELETE",
               headers: {
-                "Authorization": `Bearer ${accessToken}`,
+                Authorization: `Bearer ${accessToken}`,
               },
             }
           );
-          
+
           console.log("Delete account response status:", response.status);
-          
+
           if (!response.ok) {
-            throw new Error(`Account deletion failed with status: ${response.status}`);
+            throw new Error(
+              `Account deletion failed with status: ${response.status}`
+            );
           }
         } catch (apiError) {
           console.error("Error calling delete account API:", apiError);
           Alert.alert("Error", "Failed to delete account. Please try again.");
-          return; // Don't proceed with local cleanup if API call fails
+          return;
         }
       }
-  
-      // Clear all stored data (similar to logout)
-      await SecureStore.deleteItemAsync("accessToken");
-      await SecureStore.deleteItemAsync("refreshToken");
-      await SecureStore.deleteItemAsync("userId");
-      await SecureStore.deleteItemAsync("userEmail");
-      await SecureStore.deleteItemAsync("displayName");
-      await SecureStore.deleteItemAsync("appleUserEmail");
-      await SecureStore.deleteItemAsync("appleUserName");
-  
-      // Update state
+
+      // Use the auth utility to clear tokens
+      await clearAuthTokens();
+
+      // Update local state
       setIsLoggedIn(false);
       setUserInfo({
         displayName: "",
@@ -422,11 +431,10 @@ export default function AIPoweredComponent({
         isGuest: true,
       });
       setUserPlan("free");
-  
+
       setShowDeleteConfirmation(false);
-  
       console.log("Account deleted successfully");
-  
+
       // Navigate to onboarding welcome page
       router.push("/onboarding/welcome");
     } catch (error) {
@@ -547,237 +555,336 @@ export default function AIPoweredComponent({
     </Modal>
   );
 
-  const ProfileMenu = () => (
-    <Modal
-      visible={showProfileMenu}
-      transparent={true}
-      animationType="fade"
-      onRequestClose={() => setShowProfileMenu(false)}
-    >
-      <TouchableOpacity
-        style={styles.modalOverlay}
-        activeOpacity={1}
-        onPress={() => setShowProfileMenu(false)}
-      >
-        <View
-          style={[
-            styles.profileMenu,
-            {
-              backgroundColor: theme.colors.background.secondary,
-              borderColor: theme.colors.border,
-            },
-          ]}
-        >
-          {!isLoggedIn ? (
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => handleProfileMenuOption("login")}
-            >
-              <Ionicons
-                name="log-in-outline"
-                size={20}
-                color={theme.colors.text.primary}
-              />
-              <Text
-                style={[styles.menuText, { color: theme.colors.text.primary }]}
-              >
-                Log in
-              </Text>
-            </TouchableOpacity>
-          ) : (
-            <>
-              <View style={styles.userInfoSection}>
-                <Text
-                  style={[
-                    styles.userDisplayName,
-                    { color: theme.colors.text.primary },
-                  ]}
-                >
-                  {userInfo.displayName}
-                </Text>
-                <Text
-                  style={[
-                    styles.userEmail,
-                    { color: theme.colors.text.secondary },
-                  ]}
-                >
-                  {userInfo.email}
-                </Text>
-              </View>
+  const ProfileMenu = ({
+    showProfileMenu,
+    setShowProfileMenu,
+    theme,
+    onUpgrade,
+    setShowDeleteConfirmation,
+  }: any) => {
+    const router = useRouter();
 
-              <View style={styles.planSection}>
+    const [authChecked, setAuthChecked] = useState(false);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [isGuest, setIsGuest] = useState(false);
+    const [userInfo, setUserInfo] = useState<{
+      email: string;
+      displayName: string;
+    }>({
+      email: "",
+      displayName: "",
+    });
+    const [userPlan, setUserPlan] = useState<"free" | "pro">("free");
+
+    useEffect(() => {
+      const loadUser = async () => {
+        const result = await validateAuthState();
+        if (result.isValid && result.userData) {
+          setIsLoggedIn(true);
+          setIsGuest(result.userData.isGuest);
+          setUserInfo({
+            email: result.userData.email,
+            displayName: result.userData.displayName,
+          });
+          setUserPlan(
+            result.userData.subscriptionStatus === "pro" ? "pro" : "free"
+          );
+        } else {
+          setIsLoggedIn(false);
+          setIsGuest(false);
+          setUserInfo({ email: "", displayName: "" });
+          setUserPlan("free");
+        }
+        setAuthChecked(true);
+      };
+
+      if (showProfileMenu) {
+        loadUser();
+      }
+    }, [showProfileMenu]);
+
+    const handleLogout = async () => {
+      await clearAuthTokens();
+      setIsLoggedIn(false);
+      setUserInfo({ email: "", displayName: "" });
+      setShowProfileMenu(false);
+      router.push("/auth/sign-in");
+    };
+
+    const handleProfileMenuOption = (option: string) => {
+      setShowProfileMenu(false);
+      switch (option) {
+        case "login":
+          router.push("/auth/sign-in");
+          break;
+        case "privacy":
+          router.push("/main/privacy/PrivacyPolicyScreen");
+          break;
+        case "terms":
+          router.push("/main/terms/TermsOfUseScreen");
+          break;
+        case "liked":
+          router.push({
+            pathname: "/main/liked/LikedComponent",
+            params: { standalone: "true" },
+          });
+          break;
+        case "saved":
+          router.push("/main/saved/SavedRecipesScreen");
+          break;
+        case "upgrade":
+          onUpgrade?.();
+          break;
+        case "logout":
+          handleLogout();
+          break;
+        case "delete":
+          setShowDeleteConfirmation(true);
+          break;
+      }
+    };
+
+    if (!authChecked) return null; // don’t render until checked
+
+    return (
+      <Modal
+        visible={showProfileMenu}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowProfileMenu(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowProfileMenu(false)}
+        >
+          <View
+            style={[
+              styles.profileMenu,
+              {
+                backgroundColor: theme.colors.background.secondary,
+                borderColor: theme.colors.border,
+              },
+            ]}
+          >
+            {/* Guest / Not logged in → Show only Login */}
+            {!isLoggedIn || isGuest ? (
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => handleProfileMenuOption("login")}
+              >
+                <Ionicons
+                  name="log-in-outline"
+                  size={20}
+                  color={theme.colors.text.primary}
+                />
                 <Text
                   style={[
-                    styles.planTitle,
+                    styles.menuText,
                     { color: theme.colors.text.primary },
                   ]}
                 >
-                  Your Plan
+                  Log in
                 </Text>
-                <View style={styles.planContent}>
-                  <View
+              </TouchableOpacity>
+            ) : (
+              <>
+                {/* User info */}
+                <View style={styles.userInfoSection}>
+                  <Text
                     style={[
-                      styles.planBadge,
-                      {
-                        backgroundColor:
-                          userPlan === "pro"
-                            ? theme.colors.accent.primary + "20"
-                            : theme.colors.text.secondary + "20",
-                      },
+                      styles.userDisplayName,
+                      { color: theme.colors.text.primary },
                     ]}
                   >
-                    <Text
+                    {userInfo.displayName}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.userEmail,
+                      { color: theme.colors.text.secondary },
+                    ]}
+                  >
+                    {userInfo.email}
+                  </Text>
+                </View>
+
+                {/* Subscription plan */}
+                <View style={styles.planSection}>
+                  <Text
+                    style={[
+                      styles.planTitle,
+                      { color: theme.colors.text.primary },
+                    ]}
+                  >
+                    Your Plan
+                  </Text>
+                  <View style={styles.planContent}>
+                    <View
                       style={[
-                        styles.planLabel,
+                        styles.planBadge,
                         {
-                          color:
+                          backgroundColor:
                             userPlan === "pro"
-                              ? theme.colors.accent.primary
-                              : theme.colors.text.secondary,
+                              ? theme.colors.accent.primary + "20"
+                              : theme.colors.text.secondary + "20",
                         },
                       ]}
                     >
-                      {userPlan === "pro" ? "Premium" : "Free"}
-                    </Text>
+                      <Text
+                        style={[
+                          styles.planLabel,
+                          {
+                            color:
+                              userPlan === "pro"
+                                ? theme.colors.accent.primary
+                                : theme.colors.text.secondary,
+                          },
+                        ]}
+                      >
+                        {userPlan === "pro" ? "Premium" : "Free"}
+                      </Text>
+                    </View>
+                    {userPlan === "free" && (
+                      <TouchableOpacity
+                        style={[
+                          styles.upgradeButton,
+                          { backgroundColor: theme.colors.accent.primary },
+                        ]}
+                        onPress={() => handleProfileMenuOption("upgrade")}
+                      >
+                        <Text style={styles.upgradeButtonText}>Upgrade</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
-                  {userPlan === "free" && (
-                    <TouchableOpacity
-                      style={[
-                        styles.upgradeButton,
-                        { backgroundColor: theme.colors.accent.primary },
-                      ]}
-                      onPress={() => handleProfileMenuOption("upgrade")}
-                    >
-                      <Text style={styles.upgradeButtonText}>Upgrade</Text>
-                    </TouchableOpacity>
-                  )}
                 </View>
-              </View>
 
-              <View
-                style={[
-                  styles.menuDivider,
-                  { backgroundColor: theme.colors.border },
-                ]}
-              />
-
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => handleProfileMenuOption("privacy")}
-              >
-                <Ionicons
-                  name="shield-outline"
-                  size={20}
-                  color={theme.colors.text.primary}
-                />
-                <Text
+                {/* Menu options */}
+                <View
                   style={[
-                    styles.menuText,
-                    { color: theme.colors.text.primary },
+                    styles.menuDivider,
+                    { backgroundColor: theme.colors.border },
                   ]}
-                >
-                  Privacy & Policy
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => handleProfileMenuOption("terms")}
-              >
-                <Ionicons
-                  name="document-text-outline"
-                  size={20}
-                  color={theme.colors.text.primary}
                 />
-                <Text
-                  style={[
-                    styles.menuText,
-                    { color: theme.colors.text.primary },
-                  ]}
-                >
-                  Terms of Use
-                </Text>
-              </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => handleProfileMenuOption("liked")}
-              >
-                <Ionicons
-                  name="heart-outline"
-                  size={20}
-                  color={theme.colors.text.primary}
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => handleProfileMenuOption("privacy")}
+                >
+                  <Ionicons
+                    name="shield-outline"
+                    size={20}
+                    color={theme.colors.text.primary}
+                  />
+                  <Text
+                    style={[
+                      styles.menuText,
+                      { color: theme.colors.text.primary },
+                    ]}
+                  >
+                    Privacy & Policy
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => handleProfileMenuOption("terms")}
+                >
+                  <Ionicons
+                    name="document-text-outline"
+                    size={20}
+                    color={theme.colors.text.primary}
+                  />
+                  <Text
+                    style={[
+                      styles.menuText,
+                      { color: theme.colors.text.primary },
+                    ]}
+                  >
+                    Terms of Use
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => handleProfileMenuOption("liked")}
+                >
+                  <Ionicons
+                    name="heart-outline"
+                    size={20}
+                    color={theme.colors.text.primary}
+                  />
+                  <Text
+                    style={[
+                      styles.menuText,
+                      { color: theme.colors.text.primary },
+                    ]}
+                  >
+                    Liked Recipes
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => handleProfileMenuOption("saved")}
+                >
+                  <Ionicons
+                    name="bookmark-outline"
+                    size={20}
+                    color={theme.colors.text.primary}
+                  />
+                  <Text
+                    style={[
+                      styles.menuText,
+                      { color: theme.colors.text.primary },
+                    ]}
+                  >
+                    Saved Recipes
+                  </Text>
+                </TouchableOpacity>
+
+                <View
+                  style={[
+                    styles.menuDivider,
+                    { backgroundColor: theme.colors.border },
+                  ]}
                 />
-                <Text
-                  style={[
-                    styles.menuText,
-                    { color: theme.colors.text.primary },
-                  ]}
+
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => handleProfileMenuOption("logout")}
                 >
-                  Liked Recipes
-                </Text>
-              </TouchableOpacity>
+                  <Ionicons
+                    name="log-out-outline"
+                    size={20}
+                    color={theme.colors.text.primary}
+                  />
+                  <Text
+                    style={[
+                      styles.menuText,
+                      { color: theme.colors.text.primary },
+                    ]}
+                  >
+                    Log out
+                  </Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => handleProfileMenuOption("saved")}
-              >
-                <Ionicons
-                  name="bookmark-outline"
-                  size={20}
-                  color={theme.colors.text.primary}
-                />
-                <Text
-                  style={[
-                    styles.menuText,
-                    { color: theme.colors.text.primary },
-                  ]}
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => handleProfileMenuOption("delete")}
                 >
-                  Saved Recipes
-                </Text>
-              </TouchableOpacity>
-
-              <View
-                style={[
-                  styles.menuDivider,
-                  { backgroundColor: theme.colors.border },
-                ]}
-              />
-
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => handleProfileMenuOption("logout")}
-              >
-                <Ionicons
-                  name="log-out-outline"
-                  size={20}
-                  color={theme.colors.text.primary}
-                />
-                <Text
-                  style={[
-                    styles.menuText,
-                    { color: theme.colors.text.primary },
-                  ]}
-                >
-                  Log out
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => handleProfileMenuOption("delete")}
-              >
-                <Ionicons name="trash-outline" size={20} color="#FF4444" />
-                <Text style={[styles.menuText, { color: "#FF4444" }]}>
-                  Delete account
-                </Text>
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
-      </TouchableOpacity>
-    </Modal>
-  );
+                  <Ionicons name="trash-outline" size={20} color="#FF4444" />
+                  <Text style={[styles.menuText, { color: "#FF4444" }]}>
+                    Delete account
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    );
+  };
 
   const CountrySelector = () => (
     <Modal
@@ -981,7 +1088,6 @@ export default function AIPoweredComponent({
           />
         </TouchableOpacity>
       </View>
-
       {/* Search Input Section with Country Selector */}
       <View style={styles.searchSection}>
         <View
@@ -1033,7 +1139,6 @@ export default function AIPoweredComponent({
           )}
         </View>
       </View>
-
       {/* Ingredients List */}
       <ScrollView
         style={styles.ingredientsSection}
@@ -1096,7 +1201,6 @@ export default function AIPoweredComponent({
           )}
         </View>
       </ScrollView>
-
       {/* Mode Selection */}
       <View style={styles.modeSection}>
         <Text
@@ -1139,7 +1243,6 @@ export default function AIPoweredComponent({
           <Ionicons name="chevron-down" size={20} color={selectedMode.color} />
         </TouchableOpacity>
       </View>
-
       {/* Find Dishes Button */}
       <View style={styles.buttonSection}>
         <Button
@@ -1159,8 +1262,13 @@ export default function AIPoweredComponent({
           />
         )}
       </View>
-
-      <ProfileMenu />
+      <ProfileMenu
+        showProfileMenu={showProfileMenu}
+        setShowProfileMenu={setShowProfileMenu}
+        theme={theme}
+        onUpgrade={onUpgrade} // make sure this is defined in your parent component
+        setShowDeleteConfirmation={setShowDeleteConfirmation}
+      />
       <CountrySelector />
       <ModeSelector />
       <DeleteConfirmationModal />
@@ -1169,6 +1277,17 @@ export default function AIPoweredComponent({
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 60,
+  },
+  loadingText: {
+    fontSize: 16,
+    marginTop: 15,
+    textAlign: "center",
+  },
   profileSection: {
     flexDirection: "row",
     justifyContent: "flex-end",
@@ -1319,6 +1438,7 @@ const styles = StyleSheet.create({
   },
   findButton: {
     width: "100%",
+    backgroundColor: "#007AFF",
   },
   loadingIndicator: {
     marginTop: 10,

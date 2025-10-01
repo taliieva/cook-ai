@@ -1,7 +1,7 @@
 import { useTheme } from "@/hooks/useTheme";
 import React from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
-import logo from "../../assets/images/logo.png";
+import logo from "../../assets/images/dark-logo.png";
 interface LogoProps {
   size?: "small" | "medium" | "large";
 }

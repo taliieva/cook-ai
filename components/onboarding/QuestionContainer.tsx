@@ -1,10 +1,10 @@
-import { Button } from '@/components/ui/Button';
-import { ProgressBar } from '@/hooks/useProgress';
-import { useTheme } from '@/hooks/useTheme';
-import MaskedView from '@react-native-masked-view/masked-view';
-import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
-import React from 'react';
+import { Button } from "@/components/ui/Button";
+import { ProgressBar } from "@/hooks/useProgress";
+import { useTheme } from "@/hooks/useTheme";
+import MaskedView from "@react-native-masked-view/masked-view";
+import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
+import React from "react";
 import {
   ImageBackground,
   Platform,
@@ -13,7 +13,7 @@ import {
   StyleSheet,
   Text,
   View,
-} from 'react-native';
+} from "react-native";
 
 export const QuestionContainer = ({
   title,
@@ -21,81 +21,81 @@ export const QuestionContainer = ({
   progress,
   onNext,
   isAnswered,
-  backgroundImage = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80'
+  backgroundImage = "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
 }) => {
   const theme = useTheme();
 
   return (
     <View style={styles.container}>
-      <StatusBar 
-        barStyle="light-content" 
+      <StatusBar
+        barStyle="light-content"
         backgroundColor="transparent"
         translucent
       />
-      
       <ImageBackground
         source={{ uri: backgroundImage }}
         style={styles.backgroundImage}
         resizeMode="cover"
+        imageStyle={styles.imageStyle}
       >
         <LinearGradient
-          colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.1)', 'rgba(0,0,0,0.4)']}
+          colors={["rgba(0,0,0,0.3)", "rgba(0,0,0,0.1)", "rgba(0,0,0,0.4)"]}
           style={styles.overlay}
         />
-
-        <SafeAreaView style={styles.safeArea}>
-          <ProgressBar progress={progress} />
-          
-          <View style={styles.contentContainer}>
-            <View style={styles.questionSection}>
-              <Text style={[styles.title, theme.typography.heading.h2]}>
-                {title}
-              </Text>
-              {children}
-            </View>
-
-            {/* Bottom section with blur effect */}
-            <View style={styles.bottomSection}>
-              <MaskedView
-                style={styles.maskedBlur}
-                maskElement={
-                  <LinearGradient
-                    colors={['transparent', 'black']}
-                    style={styles.mask}
-                    locations={[0, 0.6]}
-                  />
-                }
-              >
-                <BlurView 
-                  intensity={40} 
-                  tint="dark"
-                  style={styles.blurView}
-                />
-              </MaskedView>
-
-              <LinearGradient
-                colors={[
-                  'transparent',
-                  'rgba(0, 0, 0, 0.4)',
-                  'rgba(0, 0, 0, 0.8)',
-                ]}
-                style={styles.darkOverlay}
-                locations={[0, 0.3, 1]}
-              />
-
-              {isAnswered && (
-                <View style={styles.buttonContainer}>
-                  <Button
-                    title="Next"
-                    onPress={onNext}
-                    style={styles.nextButton}
-                  />
-                </View>
-              )}
-            </View>
-          </View>
-        </SafeAreaView>
       </ImageBackground>
+
+      <SafeAreaView style={styles.safeArea}>
+        <ProgressBar progress={progress} />
+
+        <View style={styles.contentContainer}>
+          <View style={styles.questionSection}>
+            <Text style={[styles.title, theme.typography.heading.h2]}>
+              {title}
+            </Text>
+            {children}
+          </View>
+
+          {/* Bottom section with blur effect */}
+          <View style={styles.bottomSection}>
+            <MaskedView
+              style={StyleSheet.absoluteFill}
+              maskElement={
+                <LinearGradient
+                  colors={["transparent", "black"]}
+                  style={StyleSheet.absoluteFill}
+                  locations={[0, 0.6]}
+                />
+              }
+            >
+              <BlurView
+                intensity={40}
+                tint="dark"
+                style={StyleSheet.absoluteFill}
+              />
+            </MaskedView>
+
+            <LinearGradient
+              colors={[
+                "transparent",
+                "rgba(0, 0, 0, 0.4)",
+                "rgba(0, 0, 0, 0.8)",
+              ]}
+              style={StyleSheet.absoluteFill}
+              locations={[0, 0.3, 1]}
+            />
+
+            {isAnswered && (
+              <View style={styles.buttonContainer}>
+                <Button
+                  title="Next"
+                  onPress={onNext}
+                  style={styles.nextButton}
+                />
+              </View>
+            )}
+          </View>
+        </View>
+      </SafeAreaView>
     </View>
   );
 };
@@ -105,21 +105,34 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   backgroundImage: {
-    flex: 1,
-  },
-  overlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
+    width: "100%",
+    height: "100%",
+  },
+  imageStyle: {
+    resizeMode: "cover",
+    // width: '100%',
+    // height: '100%',
+  },
+  overlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1,
   },
   safeArea: {
     flex: 1,
+    zIndex: 2,
   },
   contentContainer: {
     flex: 1,
-    position: 'relative',
+    position: "relative",
   },
   questionSection: {
     flex: 1,
@@ -128,24 +141,26 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: '300',
-    fontStyle: 'italic',
-    color: '#FFFFFF',
-    textAlign: 'center',
+    fontWeight: "300",
+    fontStyle: "italic",
+    color: "#FFFFFF",
+    textAlign: "center",
     marginBottom: 40,
-    fontFamily: Platform.OS === 'ios' ? 'Georgia-Italic' : 'serif',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    fontFamily: Platform.OS === "ios" ? "Georgia-Italic" : "serif",
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
     letterSpacing: 0.5,
   },
   bottomSection: {
-    position: 'absolute',
-    bottom: 0,
+    position: "absolute",
+    bottom: -50,
     left: 0,
     right: 0,
-    height: 200,
+    height: 200,  // 👈 pick how tall you want the blur section
+    // overflow: "hidden", // ensures clean edges
   },
+  
   maskedBlur: {
     flex: 1,
   },
@@ -154,21 +169,22 @@ const styles = StyleSheet.create({
   },
   blurView: {
     flex: 1,
+    backgroundColor: "transparent",
   },
   darkOverlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
   },
   buttonContainer: {
-    position: 'absolute',
-    bottom: 30,
+    position: "absolute",
+    bottom: 100,
     left: 30,
     right: 30,
   },
   nextButton: {
-    width: '100%',
+    width: "100%",
   },
 });

@@ -88,13 +88,16 @@ export default function DishDetailScreen() {
       mushroom: "🍄",
       mushrooms: "🍄",
     };
-
-    return searchedIngredients.map((ingredient) => ({
-      name: ingredient,
-      amount: "as needed",
-      icon: ingredientIcons[ingredient.toLowerCase()] || "🥘",
-    }));
+  
+    return searchedIngredients
+      .filter((i) => typeof i === "string" && i.trim() !== "") // undefined / boş stringləri atır
+      .map((ingredient) => ({
+        name: ingredient,
+        amount: "as needed",
+        icon: ingredientIcons[ingredient.toLowerCase()] || "🥘",
+      }));
   };
+  
 
   const parseDishData = () => {
     try {
@@ -154,7 +157,6 @@ export default function DishDetailScreen() {
   };
 
   const generateIngredientsFromSteps = (steps: string[]): Ingredient[] => {
-    // This is a simple approach - in a real app, ingredients should come from the API
     const commonIngredients = [
       { keywords: ["tomato", "tomatoes"], icon: "🍅" },
       { keywords: ["egg", "eggs"], icon: "🥚" },
@@ -177,28 +179,30 @@ export default function DishDetailScreen() {
       { keywords: ["herb", "herbs", "parsley", "basil"], icon: "🌿" },
       { keywords: ["spice", "spices"], icon: "🧄" },
     ];
-
-    const foundIngredients: Ingredient[] = [];
+  
     const stepsText = steps.join(" ").toLowerCase();
-
+  
+    const foundIngredients: Ingredient[] = [];
+  
     commonIngredients.forEach((ingredient) => {
-      const found = ingredient.keywords.some((keyword) =>
-        stepsText.includes(keyword.toLowerCase())
+      const found = ingredient.keywords.some(
+        (keyword) => keyword && stepsText.includes(keyword.toLowerCase())
       );
-
+  
       if (found) {
-        const matchedKeyword = ingredient.keywords.find((keyword) =>
-          stepsText.includes(keyword.toLowerCase())
-        );
+        const matchedKeyword =
+          ingredient.keywords.find(
+            (keyword) => keyword && stepsText.includes(keyword.toLowerCase())
+          ) || ingredient.keywords[0];
+  
         foundIngredients.push({
-          name: matchedKeyword || ingredient.keywords[0],
+          name: matchedKeyword,
           amount: "as needed",
           icon: ingredient.icon,
         });
       }
     });
-
-    // If no ingredients found, add some defaults
+  
     if (foundIngredients.length === 0) {
       foundIngredients.push(
         { name: "Main ingredients", amount: "as needed", icon: "🥘" },
@@ -206,9 +210,10 @@ export default function DishDetailScreen() {
         { name: "Fresh herbs", amount: "optional", icon: "🌿" }
       );
     }
-
+  
     return foundIngredients;
   };
+  
 
   const getDifficultyFromSteps = (steps: string[]): string => {
     const stepCount = steps.length;
@@ -485,7 +490,7 @@ export default function DishDetailScreen() {
                 {dishData.shortDescription ||
                   `This delicious ${
                     dishData.culture
-                  } ${dishData.dishType.toLowerCase()} is perfect for any occasion. Made with fresh ingredients and traditional techniques, it brings authentic flavors to your table.`}
+                  } ${dishData?.dishType?.toLowerCase()} is perfect for any occasion. Made with fresh ingredients and traditional techniques, it brings authentic flavors to your table.`}
               </Text>
             </View>
 

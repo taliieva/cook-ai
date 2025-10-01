@@ -37,7 +37,7 @@ export const colors = {
         secondary: "#B3B3B3",
       },
       accent: {
-        primary: "#0598CE", // Your blue as accent
+        primary: "#007AFF", // Your blue as accent
         gradientStart: "#0598CE",
         gradientEnd: "#33A7FF", // Lighter blue for gradient
       },
@@ -57,7 +57,7 @@ export const colors = {
         secondary: "#6B6B6B",
       },
       accent: {
-        primary: "#0598CE", // Your blue as primary accent
+        primary: "#007AFF", // Your blue as primary accent
         gradientStart: "#0598CE",
         gradientEnd: "#33A7FF", // Lighter blue for gradient end
       },

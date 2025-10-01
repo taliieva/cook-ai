@@ -205,10 +205,10 @@ export default function SignInScreen() {
         // Navigate based on user status and onboarding completion
         if (data.data.isNewUser || !data.data.hasCompletedOnboarding) {
           // New user or hasn't completed onboarding
-          router.replace("/onboarding/choose-ingredients" as any);
+          router.replace("/onboarding/choose-ingredients");
         } else {
           // Returning user with completed onboarding
-          router.replace("/onboarding/ingredients-search" as any);
+          router.replace("/onboarding/ingredients-search");
         }
       } else {
         throw new Error("Authentication failed");
