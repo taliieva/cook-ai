@@ -14,7 +14,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 
 const { width, height } = Dimensions.get("window");
@@ -36,6 +36,7 @@ interface DishData {
   isSaved: boolean;
   shortDescription: string;
   steps: string[];
+  requestId: string
 }
 
 interface ApiDish {
@@ -711,6 +712,7 @@ export default function DishesScreen() {
   };
 
   const renderDishCard = (dish: DishData) => {
+
     return (
       <TouchableOpacity
         key={`completed-${dish.id}`}
@@ -1406,3 +1408,42 @@ const modernStyles = StyleSheet.create({
     shadowRadius: 2,
   },
 });
+
+// import { styles } from "@/styles/screenStyles";
+// import React, { useState } from "react";
+// import { ScrollView, View } from "react-native";
+// import { AILoadingOverlay } from "./AIOverlayLoading";
+// import { DishCard } from "./DishCard";
+// import { EmptyState } from "./EmptyState";
+// import { Header } from "./Header";
+// import { SummaryText } from "./SummaryText";
+
+// export const DishesScreen = () => {
+//   const [loading, setLoading] = useState(false);
+
+//   return (
+//     <View style={styles.container}>
+//       <Header title="Your Dishes" onBack={() => {}} isAIActive={loading} />
+
+//       {loading && <AILoadingOverlay progress={40} />}
+
+//       <ScrollView contentContainerStyle={styles.dishesContent}>
+//         <SummaryText
+//           text="AI summary about your dishes..."
+//           onReadMore={() => {}}
+//         />
+
+//         <DishCard
+//           name="Plov"
+//           image="https://picsum.photos/200"
+//           calories={450}
+//           homeCost="3₼"
+//           outdoorCost="8₼"
+//           searchId={""}
+//         />
+
+//         <EmptyState />
+//       </ScrollView>
+//     </View>
+//   );
+// };

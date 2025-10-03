@@ -263,6 +263,8 @@ export default function AIPoweredComponent({
       }
   
       // ✅ This is correct - you're passing data.dishData
+      console.log("Navigating to: /main/dishes/mainDish");
+      // router.push('/main/dishes')
       router.push({
         pathname: "/main/dishes",
         params: {

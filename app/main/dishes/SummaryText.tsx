@@ -1,21 +1,21 @@
+import { styles } from "@/styles/screenStyles";
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
+// import styles from "./styles";
 
-export const SummaryText = ({ text, isExpanded, setIsExpanded, theme }: any) => {
-  if (!text) return null;
-  const words = text.split(" ");
-  const maxWords = 20;
-  const shouldTruncate = words.length > maxWords;
-  const displayText = isExpanded ? text : words.slice(0, maxWords).join(" ");
+type Props = {
+  text: string;
+  onReadMore: () => void;
+};
 
+export const SummaryText: React.FC<Props> = ({ text, onReadMore }) => {
   return (
-    <View>
-      <Text style={{ color: theme.colors.text.secondary }}>{displayText}{!isExpanded && shouldTruncate && "..."}</Text>
-      {shouldTruncate && (
-        <TouchableOpacity onPress={() => setIsExpanded(!isExpanded)}>
-          <Text style={{ color: theme.colors.accent.primary }}>{isExpanded ? "Read less" : "Read more"}</Text>
-        </TouchableOpacity>
-      )}
+    <View style={styles.resultsSection}>
+      <Text style={styles.resultsText}>Summary</Text>
+      <Text style={styles.summaryText}>{text}</Text>
+      <TouchableOpacity style={styles.readMoreButton} onPress={onReadMore}>
+        <Text style={styles.readMoreText}>Read More</Text>
+      </TouchableOpacity>
     </View>
   );
 };

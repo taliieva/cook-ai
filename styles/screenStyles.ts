@@ -1,19 +1,301 @@
 import { StyleSheet } from "react-native";
 
-const screenStyles = StyleSheet.create({
+export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 16,
   },
   header: {
-    fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    justifyContent: "space-between",
   },
-  dishList: {
-    marginTop: 12,
-    marginBottom: 32,
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  headerContent: {
+    alignItems: "center",
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  aiHeaderIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+  },
+  aiHeaderText: {
+    fontSize: 12,
+    fontWeight: "500",
+    marginLeft: 4,
+  },
+  headerSpacer: {
+    width: 44,
+  },
+  resultsSection: {
+    paddingHorizontal: 20,
+    paddingBottom: 15,
+  },
+  resultsText: {
+    fontSize: 16,
+    fontWeight: "500",
+    marginBottom: 8,
+  },
+  summaryText: {
+    fontSize: 14,
+    lineHeight: 20,
+    opacity: 0.8,
+  },
+  readMoreButton: {
+    marginTop: 4,
+    alignSelf: "flex-start",
+  },
+  readMoreText: {
+    fontSize: 14,
+    fontWeight: "600",
+    textDecorationLine: "underline",
+  },
+  dishesContainer: {
+    flex: 1,
+  },
+  dishesContent: {
+    paddingHorizontal: 20,
+  },
+  dishCard: {
+    flexDirection: "row",
+    height: 120,
+    borderRadius: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    overflow: "hidden",
+    position: "relative",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  dishContent: {
+    flex: 1,
+    flexDirection: "row",
+  },
+  blurredContent: {
+    opacity: 0.3,
+  },
+  loadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 20,
+  },
+  blurOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(255, 255, 255, 0.92)",
+    borderRadius: 16,
+  },
+  circularProgressContainer: {
+    alignItems: "center",
+    zIndex: 30,
+  },
+  circularProgress: {
+    marginBottom: 10,
+  },
+  progressCircle: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  progressInner: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "rgba(255, 255, 255, 0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  progressTextContainer: {
+    alignItems: "center",
+  },
+  progressPercentage: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#667eea",
+    marginBottom: 3,
+  },
+  aiCraftingText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#764ba2",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  imageSection: {
+    width: 120,
+    height: "100%",
+  },
+  dishImage: {
+    width: "100%",
+    height: "100%",
+  },
+  contentSection: {
+    flex: 1,
+    padding: 16,
+    justifyContent: "space-between",
+  },
+  nameRow: {
+    marginBottom: 8,
+  },
+  dishName: {
+    fontSize: 18,
+    fontWeight: "700",
+    lineHeight: 22,
+  },
+  calorieRow: {
+    marginBottom: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  calorieChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: "rgba(52, 152, 219, 0.15)",
+  },
+  calorieText: {
+    fontSize: 12,
+    fontWeight: "600",
+    marginLeft: 4,
+  },
+  costContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F8F9FA",
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  outdoorCost: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  outdoorCostText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#FF6B6B",
+    marginLeft: 3,
+  },
+  costSeparator: {
+    width: 1,
+    height: 12,
+    backgroundColor: "#E0E0E0",
+    marginHorizontal: 8,
+  },
+  homeCost: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  homeCostText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#4ECDC4",
+    marginLeft: 3,
+  },
+  metadataRow: {
+    marginBottom: 8,
+  },
+  metadataContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  cultureChip: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    marginRight: 6,
+  },
+  cultureText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+  },
+  metadataText: {
+    fontSize: 10,
+    fontWeight: "500",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  actionsContainer: {
+    position: "absolute",
+    top: 12,
+    left: 12,
+    right: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    zIndex: 10,
+  },
+  actionButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 80,
+  },
+  emptyText: {
+    fontSize: 16,
+    textAlign: "center",
+    marginTop: 16,
+    paddingHorizontal: 20,
+    lineHeight: 24,
+  },
+  bottomPadding: {
+    height: 20,
   },
 });
-
-export default screenStyles;
