@@ -4,54 +4,11 @@ import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import {
-  Animated,
-  Dimensions,
-  Image,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
-} from "react-native";
+import {Animated, Dimensions, Image, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View} from "react-native";
+import {DishData,ApiDish} from "@/types/dish";
 
 const { width, height } = Dimensions.get("window");
 
-// Define proper types
-interface DishData {
-  id: number;
-  name: string;
-  culture: string;
-  country: string;
-  dishType: string;
-  prepTime: string;
-  calories: number;
-  outdoorCost: number;
-  homeCost: number;
-  moneySaved: number;
-  image: string;
-  isLiked: boolean;
-  isSaved: boolean;
-  shortDescription: string;
-  steps: string[];
-  requestId: string
-}
-
-interface ApiDish {
-  DishName: string;
-  CuisineType: string;
-  DishType: string;
-  EstimatedPortionSize: string;
-  EstimatedCalories: number;
-  EstimatedOutsideCost: number;
-  EstimatedHomeCost: number;
-  MoneySaved: number;
-  PictureURL: string;
-  ShortDescription: string;
-  Steps: string[];
-}
 
 // Country color mapping with appropriate colors
 const countryColors: { [key: string]: string } = {
@@ -85,8 +42,6 @@ const cultureToCountry: { [key: string]: string } = {
   French: "France",
 };
 
-// AI Loading Overlay Component
-// const gradientColors = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe'];
 const gradientColors = [
   "#667eea",
   "#764ba2",

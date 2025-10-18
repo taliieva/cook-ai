@@ -1,7 +1,6 @@
 import * as SecureStore from "expo-secure-store";
 
 const REFRESH_ENDPOINT = "https://cook-ai-backend-production.up.railway.app/v1/auth/refresh";
-const VALIDATE_ENDPOINT = "https://cook-ai-backend-production.up.railway.app/v1/auth/validate"; // Add this endpoint
 
 type RefreshResponse = {
   accessToken: string;
@@ -30,8 +29,8 @@ export async function validateAuthState(): Promise<AuthValidationResult> {
     const userId = await SecureStore.getItemAsync("userId");
     const userEmail = await SecureStore.getItemAsync("userEmail");
 
-    console.log("Checking auth state:", { 
-      hasAccessToken: !!accessToken, 
+    console.log("Checking auth state:", {
+      hasAccessToken: !!accessToken,
       hasRefreshToken: !!refreshToken,
       hasUserId: !!userId,
       hasUserEmail: !!userEmail
@@ -43,38 +42,25 @@ export async function validateAuthState(): Promise<AuthValidationResult> {
       return { isValid: false };
     }
 
-    // If we have tokens, try to use them with any authenticated API call
+    // If we have tokens, validate them properly
     if (accessToken) {
-      try {
-        // Try making a simple authenticated request to test the token
-        // Using a likely endpoint - adjust this to match your actual API
-        const testResponse = await fetch("https://cook-ai-backend-production.up.railway.app/v1/recipes", {
-          method: "GET",
-          headers: {
-            "Authorization": `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-        });
+      const isValid = await testAccessToken(accessToken);
 
-        // If we get any response other than 401, consider the token valid
-        if (testResponse.status !== 401) {
-          console.log("Access token is valid ✅ (status:", testResponse.status, ")");
-          return { 
-            isValid: true, 
-            userData: {
-              id: userId || "unknown",
-              email: userEmail || "",
-              displayName: userEmail || "User",
-              isGuest: !userEmail,
-              subscriptionStatus: "free"
-            },
-            isNewUser: false 
-          };
-        } else {
-          console.log("Access token invalid (401 unauthorized)");
-        }
-      } catch (error) {
-        console.log("Access token test failed:", error.message);
+      if (isValid) {
+        console.log("✅ Access token is valid");
+        return {
+          isValid: true,
+          userData: {
+            id: userId || "unknown",
+            email: userEmail || "",
+            displayName: userEmail || "User",
+            isGuest: !userEmail || userEmail === "",
+            subscriptionStatus: "free"
+          },
+          isNewUser: false
+        };
+      } else {
+        console.log("❌ Access token is invalid or expired");
       }
     }
 
@@ -82,38 +68,27 @@ export async function validateAuthState(): Promise<AuthValidationResult> {
     if (refreshToken) {
       console.log("Attempting to refresh tokens...");
       const refreshResult = await refreshTokenIfNeeded();
-      
+
       if (refreshResult?.accessToken) {
         console.log("Token refresh successful, testing new token...");
-        // Test the new access token
-        try {
-          const testResponse = await fetch("https://cook-ai-backend-production.up.railway.app/v1/recipes", {
-            method: "GET",
-            headers: {
-              "Authorization": `Bearer ${refreshResult.accessToken}`,
-              "Content-Type": "application/json",
-            },
-          });
 
-          // If we get any response other than 401, consider the token valid
-          if (testResponse.status !== 401) {
-            console.log("Refreshed token is valid ✅ (status:", testResponse.status, ")");
-            return { 
-              isValid: true, 
-              userData: {
-                id: userId || "unknown",
-                email: userEmail || "",
-                displayName: userEmail || "User",
-                isGuest: !userEmail,
-                subscriptionStatus: "free"
-              },
-              isNewUser: false 
-            };
-          } else {
-            console.log("Refreshed token also invalid (401 unauthorized)");
-          }
-        } catch (error) {
-          console.log("Refreshed token test failed:", error.message);
+        const isValid = await testAccessToken(refreshResult.accessToken);
+
+        if (isValid) {
+          console.log("✅ Refreshed token is valid");
+          return {
+            isValid: true,
+            userData: {
+              id: userId || "unknown",
+              email: userEmail || "",
+              displayName: userEmail || "User",
+              isGuest: !userEmail || userEmail === "",
+              subscriptionStatus: "free"
+            },
+            isNewUser: false
+          };
+        } else {
+          console.log("❌ Refreshed token is also invalid");
         }
       } else {
         console.log("Token refresh failed");
@@ -132,6 +107,42 @@ export async function validateAuthState(): Promise<AuthValidationResult> {
   }
 }
 
+// ✅ Test if access token is valid by decoding and checking expiration
+async function testAccessToken(token: string): Promise<boolean> {
+  try {
+    // Decode JWT token (without verification - just check expiration)
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      console.log("Invalid token format");
+      return false;
+    }
+
+    const payload = JSON.parse(atob(parts[1]));
+    const exp = payload.exp;
+
+    if (!exp) {
+      console.log("Token has no expiration");
+      return false;
+    }
+
+    const currentTime = Math.floor(Date.now() / 1000);
+    const isExpired = currentTime >= exp;
+
+    if (isExpired) {
+      console.log("Token is expired");
+      return false;
+    }
+
+    const timeUntilExpiry = exp - currentTime;
+    console.log(`Token is valid, expires in ${Math.floor(timeUntilExpiry / 60)} minutes`);
+    return true;
+
+  } catch (error) {
+    console.error("Token validation error:", error);
+    return false;
+  }
+}
+
 // ✅ Clear all stored authentication data
 export async function clearAuthTokens(): Promise<void> {
   try {
@@ -140,15 +151,15 @@ export async function clearAuthTokens(): Promise<void> {
     await SecureStore.deleteItemAsync("userId");
     await SecureStore.deleteItemAsync("userEmail");
     await SecureStore.deleteItemAsync("displayName");
-    
+
     // Also clear Apple user data if exists
     try {
       await SecureStore.deleteItemAsync("appleUserEmail");
       await SecureStore.deleteItemAsync("appleUserName");
     } catch (error) {
-      // These might not exist, ignore error
+      console.error("Error deleting SecureStore items:", error);
     }
-    
+
     console.log("All auth tokens cleared");
   } catch (error) {
     console.error("Error clearing auth tokens:", error);
@@ -160,9 +171,9 @@ export async function isGuestUser(): Promise<boolean> {
   try {
     const userId = await SecureStore.getItemAsync("userId");
     const userEmail = await SecureStore.getItemAsync("userEmail");
-    
+
     // Guest users typically don't have email or have a guest-specific user ID pattern
-    return !userEmail || (userId ? userId.startsWith("guest_") : false);
+    return !userEmail || userEmail === "" || (userId ? userId.startsWith("guest_") : false);
   } catch (error) {
     return false;
   }
@@ -171,8 +182,12 @@ export async function isGuestUser(): Promise<boolean> {
 export async function refreshTokenIfNeeded(): Promise<RefreshResponse | null> {
   try {
     const currentRefreshToken = await SecureStore.getItemAsync("refreshToken");
-    if (!currentRefreshToken) return null;
+    if (!currentRefreshToken) {
+      console.log("No refresh token available");
+      return null;
+    }
 
+    console.log("Calling refresh endpoint...");
     const response = await fetch(REFRESH_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -180,7 +195,14 @@ export async function refreshTokenIfNeeded(): Promise<RefreshResponse | null> {
     });
 
     if (!response.ok) {
-      console.warn("Failed to refresh token", response.status);
+      console.warn("Failed to refresh token, status:", response.status);
+
+      // If refresh token is also invalid, clear everything
+      if (response.status === 401) {
+        console.log("Refresh token invalid, clearing all tokens");
+        await clearAuthTokens();
+      }
+
       return null;
     }
 
@@ -190,7 +212,7 @@ export async function refreshTokenIfNeeded(): Promise<RefreshResponse | null> {
     await SecureStore.setItemAsync("accessToken", data.accessToken);
     await SecureStore.setItemAsync("refreshToken", data.refreshToken);
 
-    console.log("Tokens refreshed ✅");
+    console.log("Tokens refreshed successfully ✅");
     return data;
   } catch (err) {
     console.error("Error refreshing token:", err);
@@ -199,10 +221,14 @@ export async function refreshTokenIfNeeded(): Promise<RefreshResponse | null> {
 }
 
 export async function fetchWithAuth(
-  url: string,
-  options: RequestInit = {}
+    url: string,
+    options: RequestInit = {}
 ): Promise<Response> {
   let accessToken = await SecureStore.getItemAsync("accessToken");
+
+  if (!accessToken) {
+    console.warn("No access token available for fetchWithAuth");
+  }
 
   let response = await fetch(url, {
     ...options,
@@ -215,9 +241,12 @@ export async function fetchWithAuth(
 
   // 🔄 If unauthorized, try refreshing token once
   if (response.status === 401) {
+    console.log("Got 401, attempting token refresh...");
     const newTokens = await refreshTokenIfNeeded();
+
     if (newTokens?.accessToken) {
       accessToken = newTokens.accessToken;
+      console.log("Retrying request with refreshed token...");
 
       response = await fetch(url, {
         ...options,
@@ -227,6 +256,8 @@ export async function fetchWithAuth(
           "Content-Type": "application/json",
         },
       });
+    } else {
+      console.warn("Token refresh failed, request will fail");
     }
   }
 
@@ -234,5 +265,5 @@ export async function fetchWithAuth(
 }
 
 export async function getRecipes() {
-  return fetchWithAuth("/v1/recipes");
+  return fetchWithAuth("https://cook-ai-backend-production.up.railway.app/v1/recipes");
 }
