@@ -262,8 +262,8 @@ export default function AIPoweredComponent({
         throw new Error("Invalid response structure from API");
       }
   
-      // ✅ This is correct - you're passing data.dishData
-      console.log("Navigating to: /main/dishes/mainDish");
+
+      console.log("Navigating to: /main/dishes");
       // router.push('/main/dishes')
       router.push({
         pathname: "/main/dishes",
