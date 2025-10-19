@@ -17,7 +17,8 @@ import siriLogo from "../../assets/images/ai-logo.png";
 import BillingComponent from "../main/billing/BillingComponent";
 import LikedComponent from "../main/liked/LikedComponent";
 import AIPoweredComponent from "../main/search/AIPoweredComponent";
-import InsightsComponent from "./app-insight";
+import InsightsScreen from "../main/insight";
+
 
 const { width, height } = Dimensions.get("window");
 
@@ -169,13 +170,7 @@ export default function UnifiedMainScreen() {
           />
         );
       case "insights":
-        return (
-          <InsightsComponent
-            userPlan={userPlan}
-            onSearchAgain={handleSearchAgain}
-            onUpgrade={handleUpgrade}
-          />
-        );
+        return <InsightsScreen />;
       case "liked":
         return <LikedComponent userPlan={userPlan} onUpgrade={handleUpgrade} />;
       case "billing":
