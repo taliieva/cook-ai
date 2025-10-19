@@ -6,8 +6,10 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
+    Alert,
     Dimensions,
     ImageBackground,
+    Linking,
     SafeAreaView,
     ScrollView,
     StatusBar,
@@ -31,6 +33,7 @@ interface DishDetail {
     shortDescription: string;
     steps: string[];
     dishType: string;
+    videoURL?: string;
 }
 
 interface Ingredient {
@@ -208,8 +211,23 @@ export default function DishDetailScreen() {
         router.back();
     };
 
-    const handleStartCooking = () => {
-        console.log("Start cooking process");
+    const handleStartCooking = async () => {
+        if (dishData?.videoURL) {
+            try {
+                const supported = await Linking.canOpenURL(dishData.videoURL);
+                if (supported) {
+                    await Linking.openURL(dishData.videoURL);
+                } else {
+                    console.log("Cannot open URL:", dishData.videoURL);
+                    Alert.alert("Error", "Unable to open video");
+                }
+            } catch (error) {
+                console.error("Error opening video:", error);
+                Alert.alert("Error", "Failed to open video");
+            }
+        } else {
+            Alert.alert("No Video", "Video tutorial not available for this recipe");
+        }
     };
 
     const handleAddToFavorites = () => {
@@ -450,7 +468,9 @@ export default function DishDetailScreen() {
                                         size={24}
                                         color="#FFFFFF"
                                     />
-                                    <Text style={styles.buttonText}>Start Cooking</Text>
+                                    <Text style={styles.buttonText}>
+                                        {dishData?.videoURL ? "Watch Video Tutorial" : "Start Cooking"}
+                                    </Text>
                                 </LinearGradient>
                             </TouchableOpacity>
                         </View>

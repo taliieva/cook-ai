@@ -28,4 +28,5 @@ export interface DishData {
     PictureURL: string;
     ShortDescription: string;
     Steps: string[];
+    VideoURL: string;
   }

@@ -95,5 +95,6 @@ export const transformApiDishesToDishData = (
         isSaved: false,
         shortDescription: dish.ShortDescription || "",
         steps: dish.Steps || [],
+        videoURL: dish.VideoURL || "",
     }));
 };
