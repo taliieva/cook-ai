@@ -224,9 +224,9 @@ export default function AIPoweredComponent({
       );
       return;
     }
-    
+
     setIsLoading(true);
-  
+
     try {
       const requestBody = {
         ingredients: ingredients,
@@ -235,12 +235,12 @@ export default function AIPoweredComponent({
         deviceLanguage: "en-US",
         dietType: selectedMode.code,
       };
-  
+
       console.log("=== API Request Debug ===");
       console.log("Endpoint:", "https://api.thecookai.app/v1/recipes");
       console.log("Request body:", JSON.stringify(requestBody, null, 2));
       console.log("========================");
-  
+
       const response = await fetchWithAuth(
         "https://cook-ai-backend-production.up.railway.app/v1/recipes",
         {
@@ -248,20 +248,22 @@ export default function AIPoweredComponent({
           body: JSON.stringify(requestBody),
         }
       );
-  
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-  
+
       const data = await response.json();
-  
+
       console.log("Full response:", JSON.stringify(data, null, 2));
-      console.log("dishData extracted:", JSON.stringify(data.dishData, null, 2)); // Add this debug line
-  
+      console.log(
+        "dishData extracted:",
+        JSON.stringify(data.dishData, null, 2)
+      ); // Add this debug line
+
       if (!data.dishData || !data.dishData.DishSuggestions) {
         throw new Error("Invalid response structure from API");
       }
-  
 
       console.log("Navigating to: /main/dishes");
       // router.push('/main/dishes')
@@ -278,7 +280,8 @@ export default function AIPoweredComponent({
           usageInfo: JSON.stringify(data.usageInfo || {}),
         },
       });
-      
+
+      console.log('searchId', data.searchId);
     } catch (error) {
       console.error("Error fetching dishes:", error);
       Alert.alert(
