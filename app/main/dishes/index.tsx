@@ -4,13 +4,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
   SafeAreaView,
   ScrollView,
   StatusBar,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { DishCompletedCard } from "./components/DishCompletedCard";
 import { DishLoadingCard } from "./components/DishLoadingCard";
@@ -125,26 +124,27 @@ export default function DishesScreen() {
     });
   };
 
-  const handleLike = async (dishId: number) => {
-    // Optimistic update: immediately toggle the like UI
+  const handleLike = async (dish: DishData) => {
+    console.log('index dish data', dish)
+    // Optimistic UI update
     setDishStates((prev) =>
-      prev.map((d) => (d.id === dishId ? { ...d, isLiked: !d.isLiked } : d))
+      prev.map((d) =>
+        d.id === dish.id ? { ...d, isLiked: !d.isLiked } : d
+      )
     );
 
-    console.log("params.name", params);
     try {
-      const res = await likeRecipe(String(dishId), dishStates?.[0]?.name);
-      console.log("✅ Like success:", res.message);
-    } catch (error: any) {
-      console.error("❌ Like failed:", error);
-      Alert.alert("Error", error.message || "Failed to like recipe");
-
-      // revert UI if request fails
+      const res = await likeRecipe(dish.id, dish.name);
+      if (!res.success) throw new Error(res.error);
+    } catch (err) {
+      console.error("Like error:", err);
+      // Revert if failed
       setDishStates((prev) =>
-        prev.map((d) => (d.id === dishId ? { ...d, isLiked: !d.isLiked } : d))
+        prev.map((d) =>
+          d.id === dish.id ? { ...d, isLiked: !d.isLiked } : d
+        )
       );
     }
-    console.log("dishStates", dishStates);
   };
 
   // const handleLike = (dishId: number) => {
@@ -155,20 +155,25 @@ export default function DishesScreen() {
   //   );
   // };
 
-  const handleSave = async (dishId: number) => {
+  const handleSave = async (dish: DishData) => {
+    
+    // Optimistic UI update
     setDishStates((prev) =>
-      prev.map((d) => (d.id === dishId ? { ...d, isSaved: !d.isSaved } : d))
+      prev.map((d) =>
+        d.id === dish.id ? { ...d, isSaved: !d.isSaved } : d
+      )
     );
 
     try {
-      const res = await saveRecipe(String(dishId), dishStates?.[0]?.name);
-      console.log("✅ Save success:", res.message);
-    } catch (error: any) {
-      console.error("❌ Save failed:", error);
-      Alert.alert("Error", error.message || "Failed to save recipe");
-
+      const res = await saveRecipe(dish.id, dish.name);
+      if (!res.success) throw new Error(res.error);
+    } catch (err) {
+      console.error("Save error:", err);
+      // Revert if failed
       setDishStates((prev) =>
-        prev.map((d) => (d.id === dishId ? { ...d, isSaved: !d.isSaved } : d))
+        prev.map((d) =>
+          d.id === dish.id ? { ...d, isSaved: !d.isSaved } : d
+        )
       );
     }
   };

@@ -80,7 +80,7 @@ export const transformApiDishesToDishData = (
     apiDishes: ApiDish[]
 ): DishData[] => {
     return apiDishes.map((dish: ApiDish, index: number) => ({
-        id: index + 1,
+        id: dish.id,
         name: dish.DishName || "Unknown Dish",
         culture: dish.CuisineType || "Unknown",
         country: dish.CuisineType || "Unknown",

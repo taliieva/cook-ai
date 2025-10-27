@@ -8,8 +8,8 @@ import { dishCardStyles } from "../styles/dishCardStyles";
 type Props = {
   dish: DishData;
   onPress: (dish: DishData, searchId?: string) => void;
-  onLike: (dishId: number) => void;
-  onSave: (dishId: number) => void;
+  onLike: (dish: any) => void;
+  onSave: (dishId: any) => void;
   getCountryBackgroundColor: (culture: string) => string;
   truncateName: (name: string, maxLength?: number) => string;
 };
@@ -120,7 +120,7 @@ export const DishCompletedCard: React.FC<Props> = ({
                 : theme.colors.background.primary + "90",
             },
           ]}
-          onPress={() => onLike(dish.id)}
+          onPress={() => onLike(dish)}
         >
           <Ionicons
             name={dish.isLiked ? "heart" : "heart-outline"}
@@ -138,7 +138,7 @@ export const DishCompletedCard: React.FC<Props> = ({
                 : theme.colors.background.primary + "90",
             },
           ]}
-          onPress={() => onSave(dish.id)}
+          onPress={() => onSave(dish)}
         >
           <Ionicons
             name={dish.isSaved ? "bookmark" : "bookmark-outline"}

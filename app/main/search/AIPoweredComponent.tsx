@@ -276,7 +276,6 @@ export default function AIPoweredComponent({
           dishData: JSON.stringify(data.dishData), // ✅ Correct!
           localizedSummary: JSON.stringify(data.localizedSummary || {}),
           requestId: data.requestId || "",
-          searchId: data.searchId || "",
           usageInfo: JSON.stringify(data.usageInfo || {}),
         },
       });

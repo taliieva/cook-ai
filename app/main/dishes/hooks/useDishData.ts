@@ -7,7 +7,7 @@ import {
 } from "../utils/ingredientHelpers";
 
 export interface DishDetail {
-  id: number;
+  id: string;
   name: string;
   culture: string;
   image: string;

@@ -1,5 +1,5 @@
 export interface DishData {
-    id: number;
+    id: string;
     name: string;
     culture: string;
     country: string;
@@ -17,6 +17,7 @@ export interface DishData {
   }
   
   export interface ApiDish {
+    id: string,
     DishName: string;
     CuisineType: string;
     DishType: string;

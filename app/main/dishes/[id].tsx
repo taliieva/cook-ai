@@ -26,72 +26,53 @@ import { dishDetailStyles } from "./styles/dishDetailStyles";
 export default function DishDetailScreen() {
   const router = useRouter();
   const theme = useTheme();
-  const { dishData, ingredients, searchId } = useDishData();
+  const { dishData, ingredients } = useDishData(); // removed searchId since we’ll use dishData.id
   const [isFavorite, setIsFavorite] = useState(false);
   const { likeRecipe, loading } = useLikeRecipe();
-  const handleBack = () => {
-    router.back();
-  };
 
-  console.log("searchid on details page", searchId);
+  const handleBack = () => router.back();
 
   const handleStartCooking = async () => {
-    if (dishData?.videoURL) {
-      try {
-        const supported = await Linking.canOpenURL(dishData.videoURL);
-        if (supported) {
-          await Linking.openURL(dishData.videoURL);
-        } else {
-          console.log("Cannot open URL:", dishData.videoURL);
-          Alert.alert("Error", "Unable to open video");
-        }
-      } catch (error) {
-        console.error("Error opening video:", error);
-        Alert.alert("Error", "Failed to open video");
+    if (!dishData?.videoURL) {
+      return Alert.alert("No Video", "Video tutorial not available for this recipe");
+    }
+
+    try {
+      const supported = await Linking.canOpenURL(dishData.videoURL);
+      if (supported) {
+        await Linking.openURL(dishData.videoURL);
+      } else {
+        Alert.alert("Error", "Unable to open video");
       }
-    } else {
-      Alert.alert("No Video", "Video tutorial not available for this recipe");
+    } catch (error) {
+      console.error("Error opening video:", error);
+      Alert.alert("Error", "Failed to open video");
     }
   };
 
-  console.log("dishdata: ", dishData);
-
+  // ✅ Updated Like logic based on new API (dishData.id instead of searchId)
   const handleToggleFavorite = async () => {
-    if (!dishData || !searchId) return;
+    if (!dishData?.id || !dishData?.name) return;
 
-    const id =
-      typeof searchId === "string"
-        ? searchId
-        : Array.isArray(searchId)
-        ? searchId[0]
-        : null;
-
-    if (!id) return;
-
+    // Optimistic UI
     setIsFavorite((prev) => !prev);
 
     try {
-      const res = await likeRecipe(id, dishData.name);
+      // 🔥 Use dishData.id as searchId (per your new backend design)
+      const res = await likeRecipe(dishData.id, dishData.name);
+      
       if (res.success) {
-        console.log("✅", res.data?.message);
+        console.log("✅ Recipe liked:", res.data?.message);
       } else {
         Alert.alert("Error", res.error || "Failed to like recipe");
-        setIsFavorite((prev) => !prev);
+        setIsFavorite((prev) => !prev); // revert
       }
     } catch (err) {
-      console.error(err);
+      console.error("Like error:", err);
       Alert.alert("Error", "Something went wrong");
-      setIsFavorite((prev) => !prev);
+      setIsFavorite((prev) => !prev); // revert
     }
   };
-
-  // const handleToggleFavorite = () => {
-  //     setIsFavorite(!isFavorite);
-  //     console.log(
-  //         `${isFavorite ? "Removed from" : "Added to"} favorites:`,
-  //         dishData?.name
-  //     );
-  // };
 
   if (!dishData) {
     return (
@@ -117,11 +98,7 @@ export default function DishDetailScreen() {
 
   return (
     <View style={dishDetailStyles.container}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor="transparent"
-        translucent
-      />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <ImageBackground
         source={{ uri: dishData.image }}
@@ -138,11 +115,7 @@ export default function DishDetailScreen() {
             />
           }
         >
-          <BlurView
-            intensity={40}
-            tint="dark"
-            style={dishDetailStyles.blurView}
-          />
+          <BlurView intensity={40} tint="dark" style={dishDetailStyles.blurView} />
         </MaskedView>
 
         <LinearGradient
@@ -156,6 +129,7 @@ export default function DishDetailScreen() {
             onBack={handleBack}
             isFavorite={isFavorite}
             onToggleFavorite={handleToggleFavorite}
+            disabled={loading}
           />
 
           <ScrollView
@@ -190,3 +164,4 @@ export default function DishDetailScreen() {
     </View>
   );
 }
+

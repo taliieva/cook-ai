@@ -25,6 +25,7 @@ export const useLikeRecipe = () => {
     setError(null);
 
     try {
+      console.log("➡️ Sending body:", { searchId, dishName });
 
       const token = await getToken();
       console.log('token on hook', token)
