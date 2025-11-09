@@ -21,7 +21,13 @@ import { useLikeRecipe } from "../dishes/hooks/useLikeRecipes";
 
 const { width } = Dimensions.get("window");
 
-export default function LikedComponent({ userPlan = "free", onUpgrade, standalone = false }) {
+interface LikedComponentProps {
+  userPlan?: string;
+  onUpgrade?: () => void;
+  standalone?: boolean;
+}
+
+export default function LikedComponent({ userPlan = "free", onUpgrade, standalone = false }: LikedComponentProps) {
   const theme = useTheme();
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -38,7 +44,7 @@ export default function LikedComponent({ userPlan = "free", onUpgrade, standalon
     cuisine: recipe.cuisineType,
     cookTime: recipe.prepTime || "25 min",
     difficulty: "Medium", // Default value
-    ingredients: [], // We could parse from steps if needed
+    ingredients: [] as string[], // Type it as string array
     rating: 4.5, // Default value
     image: "🍽️", // Default emoji
     dateAdded: recipe.likedAt,
@@ -105,7 +111,7 @@ export default function LikedComponent({ userPlan = "free", onUpgrade, standalon
     );
   };
 
-  const getDifficultyColor = (difficulty) => {
+  const getDifficultyColor = (difficulty: string) => {
     switch (difficulty.toLowerCase()) {
       case "easy": return "#4CAF50";
       case "medium": return "#FF9800";
@@ -114,7 +120,7 @@ export default function LikedComponent({ userPlan = "free", onUpgrade, standalon
     }
   };
 
-  const renderRecipeCard = (recipe) => (
+  const renderRecipeCard = (recipe: any) => (
     <View key={recipe.id} style={[styles.recipeCard, { 
       backgroundColor: theme.colors.background.secondary,
       borderColor: theme.colors.border
@@ -167,7 +173,7 @@ export default function LikedComponent({ userPlan = "free", onUpgrade, standalon
           Ingredients:
         </Text>
         <View style={styles.ingredientsList}>
-          {recipe.ingredients.slice(0, 4).map((ingredient, index) => (
+          {recipe.ingredients.slice(0, 4).map((ingredient: string, index: number) => (
             <View key={index} style={[styles.ingredientTag, { 
               backgroundColor: theme.colors.accent.primary + "15",
               borderColor: theme.colors.accent.primary + "30"

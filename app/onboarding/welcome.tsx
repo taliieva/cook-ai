@@ -11,6 +11,7 @@ import * as SecureStore from 'expo-secure-store';
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
+  Linking,
   Platform,
   SafeAreaView,
   StatusBar,
@@ -41,6 +42,21 @@ export default function WelcomeScreen() {
   useEffect(() => {
     console.log('WelcomeScreen mounted ✅');
   }, []);
+
+  const handlePrivacyPress = async () => {
+    try {
+      const url = 'https://thecookai.app/privacy';
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert('Error', 'Unable to open privacy policy');
+      }
+    } catch (error) {
+      console.error('Error opening privacy policy:', error);
+      Alert.alert('Error', 'Unable to open privacy policy');
+    }
+  };
 
   const handleGetStarted = async () => {
     if (!privacyAccepted) {
@@ -145,9 +161,7 @@ export default function WelcomeScreen() {
           linkText="Privacy Policy"
           checked={privacyAccepted}
           onPress={() => setPrivacyAccepted(!privacyAccepted)}
-          onLinkPress={() => {
-            /* Open privacy policy */
-          }}
+          onLinkPress={handlePrivacyPress}
         />
       </View>
     </SafeAreaView>

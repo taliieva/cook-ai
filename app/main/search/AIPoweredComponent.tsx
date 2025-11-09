@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  Linking,
   Modal,
   ScrollView,
   StyleSheet,
@@ -307,17 +308,27 @@ export default function AIPoweredComponent({
     );
   }
 
-  const handleProfileMenuOption = (option: any) => {
+  const handleProfileMenuOption = async (option: any) => {
     setShowProfileMenu(false);
     switch (option) {
       case "login":
         router.push("/auth/sign-in");
         break;
       case "privacy":
-        router.push("/main/privacy/PrivacyPolicyScreen");
+        try {
+          await Linking.openURL("https://thecookai.app/privacy");
+        } catch (error) {
+          console.error("Error opening privacy policy:", error);
+          Alert.alert("Error", "Unable to open privacy policy");
+        }
         break;
       case "terms":
-        router.push("/main/terms/TermsOfUseScreen");
+        try {
+          await Linking.openURL("https://thecookai.app/terms");
+        } catch (error) {
+          console.error("Error opening terms:", error);
+          Alert.alert("Error", "Unable to open terms of use");
+        }
         break;
       case "liked":
         router.push({
@@ -616,17 +627,27 @@ export default function AIPoweredComponent({
       router.push("/auth/sign-in");
     };
 
-    const handleProfileMenuOption = (option: string) => {
+    const handleProfileMenuOption = async (option: string) => {
       setShowProfileMenu(false);
       switch (option) {
         case "login":
           router.push("/auth/sign-in");
           break;
         case "privacy":
-          router.push("/main/privacy/PrivacyPolicyScreen");
+          try {
+            await Linking.openURL("https://thecookai.app/privacy");
+          } catch (error) {
+            console.error("Error opening privacy policy:", error);
+            Alert.alert("Error", "Unable to open privacy policy");
+          }
           break;
         case "terms":
-          router.push("/main/terms/TermsOfUseScreen");
+          try {
+            await Linking.openURL("https://thecookai.app/terms");
+          } catch (error) {
+            console.error("Error opening terms:", error);
+            Alert.alert("Error", "Unable to open terms of use");
+          }
           break;
         case "liked":
           router.push({
