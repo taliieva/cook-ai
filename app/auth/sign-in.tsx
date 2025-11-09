@@ -294,10 +294,10 @@ export default function SignInScreen() {
         
         if (shouldShowOnboarding) {
           console.log("📍 Navigating to onboarding questions (new user or explicitly incomplete)");
-          router.replace("/questions/CookingExperienceScreen");
+          router.replace("/onboarding/questions/CookingExperienceScreen");
         } else {
           console.log("📍 Navigating to main app (returning user with completed onboarding)");
-          router.replace("/onboarding/ingredients-search");
+          router.replace("/main/home");
         }
       } else {
         // Backend returned success: false

@@ -1,6 +1,6 @@
+import { clearAuthTokens, validateAuthState } from "@/utils/auth";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { clearAuthTokens, validateAuthState } from "@/utils/auth";
 
 export const useAuthCheck = () => {
     const router = useRouter();
@@ -27,7 +27,7 @@ export const useAuthCheck = () => {
                 } else {
                     // Authenticated user - go to main app
                     console.log("✅ Authenticated user - redirect to main");
-                    route = "/onboarding/ingredients-search";
+                    route = "/main/home";
                 }
             } else {
                 // Invalid/expired token - go to welcome

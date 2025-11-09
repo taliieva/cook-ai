@@ -56,7 +56,7 @@ export default function CuisinePreferenceScreen() {
   };
 
   const handleNext = () => {
-    router.push('/questions/IngredientsAvailableScreen');
+    router.push('/onboarding/questions/IngredientsAvailableScreen');
   };
 
   return (

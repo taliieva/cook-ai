@@ -80,7 +80,7 @@ const modes = [
 ];
 
 // Helper function to get mode color with transparency
-const getModeColor = (mode, opacity = 1) => {
+const getModeColor = (mode: any, opacity: number = 1) => {
   return opacity === 1
     ? mode.color
     : mode.color +
@@ -229,68 +229,53 @@ export default function AIPoweredComponent({
     setIsLoading(true);
 
     try {
-      const requestBody = {
-        ingredients: ingredients,
-        country: getCountryNameForAPI(selectedCountry.code),
-        language: "en",
-        deviceLanguage: "en-US",
-        dietType: selectedMode.code,
-      };
+      // Generate temporary searchId for immediate navigation
+      const tempSearchId = `search_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-      console.log("=== API Request Debug ===");
-      console.log("Endpoint:", "https://api.thecookai.app/v1/recipes");
-      console.log("Request body:", JSON.stringify(requestBody, null, 2));
-      console.log("========================");
+      console.log("🚀 Immediate navigation with searchId:", tempSearchId);
 
-      const response = await fetchWithAuth(
-        "https://cook-ai-backend-production.up.railway.app/v1/recipes",
-        {
-          method: "POST",
-          body: JSON.stringify(requestBody),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      console.log("Full response:", JSON.stringify(data, null, 2));
-      console.log(
-        "dishData extracted:",
-        JSON.stringify(data.dishData, null, 2)
-      ); // Add this debug line
-
-      if (!data.dishData || !data.dishData.DishSuggestions) {
-        throw new Error("Invalid response structure from API");
-      }
-
-      console.log("Navigating to: /main/dishes");
-      console.log('searchId', data.searchId);
-      
-      // router.push('/main/dishes')
+      // ✨ NAVIGATE IMMEDIATELY (don't wait for API response)
       router.push({
         pathname: "/main/dishes",
         params: {
           country: selectedCountry.code,
           mode: selectedMode.code,
           ingredients: JSON.stringify(ingredients),
-          dishData: JSON.stringify(data.dishData),
-          localizedSummary: JSON.stringify(data.localizedSummary || {}),
-          searchId: data.searchId || "", // ✅ CRITICAL: Pass searchId for like/save functionality
-          requestId: data.requestId || "",
-          usageInfo: JSON.stringify(data.usageInfo || {}),
+          searchId: tempSearchId,
+          isStreaming: "true", // Flag to indicate streaming mode
+          expectedDishCount: "3", // Show 3 placeholder cards initially
         },
       });
+
+      // Reset loading state immediately since we've navigated
+      setIsLoading(false);
+
+      // ⏱️ WAIT 100ms for dishes screen to mount and set up listeners
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Import streaming service dynamically
+      const { streamingService } = await import('../dishes/services/streamingService');
+
+      console.log("📡 Starting streaming service...");
+
+      // Start streaming in background (don't await - let it run asynchronously)
+      streamingService.startStreaming(
+        tempSearchId,
+        ingredients,
+        selectedCountry.code,
+        selectedMode.code
+      ).catch((error) => {
+        console.error("Streaming error:", error);
+        // Error will be handled by the streaming service events
+      });
+
     } catch (error) {
-      console.error("Error fetching dishes:", error);
+      console.error("Error initiating dish search:", error);
+      setIsLoading(false);
       Alert.alert(
         "Error",
-        "Failed to fetch dishes. Please check your internet connection and try again."
+        "Failed to start dish search. Please check your internet connection and try again."
       );
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -332,12 +317,12 @@ export default function AIPoweredComponent({
         break;
       case "liked":
         router.push({
-          pathname: "/main/liked/LikedComponent",
+          pathname: "/main/recipes/LikedRecipes",
           params: { standalone: "true" },
         });
         break;
       case "saved":
-        router.push("/main/saved/SavedRecipesScreen");
+        router.push("/main/recipes/SavedRecipes");
         break;
       case "upgrade":
         onUpgrade();
@@ -651,12 +636,12 @@ export default function AIPoweredComponent({
           break;
         case "liked":
           router.push({
-            pathname: "/main/liked/LikedComponent",
+            pathname: "/main/recipes/LikedRecipes",
             params: { standalone: "true" },
           });
           break;
         case "saved":
-          router.push("/main/saved/SavedRecipesScreen");
+          router.push("/main/recipes/SavedRecipes");
           break;
         case "upgrade":
           onUpgrade?.();
@@ -1176,7 +1161,7 @@ export default function AIPoweredComponent({
           Your Ingredients ({ingredients.length})
         </Text>
         <View style={styles.ingredientsContainer}>
-          {ingredients.map((ingredient, index) => (
+          {ingredients.map((ingredient: string, index: number) => (
             <View
               key={index}
               style={[

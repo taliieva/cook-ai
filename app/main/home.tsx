@@ -11,9 +11,9 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
-import InsightsScreen from "../main/insight";
-import LikedComponent from "../main/liked/LikedComponent";
-import AIPoweredComponent from "../main/search/AIPoweredComponent";
+import InsightsScreen from "./insight";
+import LikedComponent from "./recipes/LikedRecipes";
+import AIPoweredComponent from "./search/AIPoweredComponent";
 
 // Import your PNG icon
 const siriLogo = require("../../assets/images/ai-logo.png");

@@ -23,6 +23,7 @@ import {
     transformApiDishesToDishData,
     truncateName,
 } from "./utils/dishHelpers";
+import { streamingService } from "./services/streamingService";
 
 export default function DishesScreen() {
   const router = useRouter();
@@ -40,12 +41,202 @@ export default function DishesScreen() {
     summary: "",
   });
   const [isExpanded, setIsExpanded] = useState(false);
+  const [streamComplete, setStreamComplete] = useState(false);
 
   const { loadingProgress, simulateAIRecipeGeneration } = useDishGeneration();
 
+  // Check if we're in streaming mode
+  const isStreaming = params.isStreaming === 'true';
+  const [activeSearchId, setActiveSearchId] = useState<string>(params.searchId as string);
+  const tempSearchId = params.searchId as string;
+
   useEffect(() => {
-    parseApiData();
+    if (isStreaming) {
+      console.log("🎯 Dishes screen initializing with searchId:", tempSearchId);
+      initializeStreamingMode();
+    } else {
+      parseApiData();
+    }
   }, []);
+
+  // Listen for streaming events
+  useEffect(() => {
+    if (!isStreaming || !tempSearchId) return;
+
+    console.log("👂 Setting up event listeners for searchId:", tempSearchId);
+
+    const handleStreamStarted = (event: any) => {
+      console.log(`📨 Received stream_started event:`, event.searchId);
+      console.log(`🔍 Checking against temp: ${tempSearchId}, active: ${activeSearchId}`);
+      
+      // Always accept the first stream_started event (it has the real searchId)
+      // This is the backend's real searchId that we need to update to
+      console.log(`📡 Stream started: ${event.totalDishes} dishes expected`);
+      console.log(`🔑 Updating searchId from ${tempSearchId} to ${event.searchId}`);
+      
+      // Update to real searchId from backend
+      setActiveSearchId(event.searchId);
+      
+      // Update placeholders count if backend returns different number
+      if (event.totalDishes && event.totalDishes > dishes.length) {
+        const additionalPlaceholders = Array.from(
+          { length: event.totalDishes - dishes.length },
+          (_, i) => createPlaceholderDish(dishes.length + i)
+        );
+        setDishes(prev => [...prev, ...additionalPlaceholders]);
+      }
+    };
+
+    const handleDishData = (event: any) => {
+      console.log(`📨 Received dish_data event:`, event.searchId, event.dishIndex);
+      console.log(`🔍 Checking against temp: ${tempSearchId}, active: ${activeSearchId}`);
+      
+      // Accept dish data from activeSearchId (the real one from backend)
+      if (event.searchId !== activeSearchId) {
+        console.log(`❌ SearchId mismatch! Expected: ${activeSearchId}, Got: ${event.searchId}`);
+        return;
+      }
+      
+      console.log(`✅ Accepted dish ${event.dishIndex + 1}:`, event.data.name);
+
+      setDishes(prev => {
+        const newDishes = [...prev];
+        
+        // Ensure array is large enough
+        while (newDishes.length <= event.dishIndex) {
+          newDishes.push(createPlaceholderDish(newDishes.length));
+        }
+        
+        // Replace placeholder with real data
+        newDishes[event.dishIndex] = {
+          ...event.data,
+          isLoading: false,
+        } as DishData;
+        
+        return newDishes;
+      });
+
+      // Add to dishStates for display (simulating the AI generation)
+      setDishStates(prev => {
+        // Check if this dish is already in the state
+        const existingIndex = prev.findIndex(d => d.id === event.data.id);
+        if (existingIndex >= 0) {
+          return prev; // Already added
+        }
+        return [...prev, event.data as DishData];
+      });
+    };
+
+    const handleStreamComplete = (event: any) => {
+      console.log(`📨 Received stream_complete event:`, event.searchId);
+      
+      // Accept from activeSearchId (the real one from backend)
+      if (event.searchId !== activeSearchId) {
+        console.log(`❌ SearchId mismatch! Expected: ${activeSearchId}, Got: ${event.searchId}`);
+        return;
+      }
+      
+      console.log('✅ Stream complete, received full data');
+      setStreamComplete(true);
+      setIsLoading(false);
+
+      // Remove any remaining loading placeholders
+      setDishes(prev => prev.filter(d => !d.isLoading));
+
+      // Update header info if available
+      if (event.fullData) {
+        setHeaderInfo({
+          title: event.fullData.dishData?.CatchyTitle || "Your Dishes Are Ready!",
+          description: event.fullData.dishData?.IngredientDescription || "",
+          summary: event.fullData.localizedSummary?.Summary || "",
+        });
+      }
+    };
+
+    const handleStreamError = (event: any) => {
+      console.log(`📨 Received stream_error event:`, event.searchId);
+      
+      // Accept from either searchId for errors
+      if (event.searchId !== tempSearchId && event.searchId !== activeSearchId) return;
+      
+      console.error('❌ Stream error:', event.error);
+      setIsLoading(false);
+      setStreamComplete(true);
+      
+      Alert.alert(
+        'Error Loading Dishes',
+        event.error || 'Failed to load dishes. Please try again.',
+        [
+          {
+            text: 'Go Back',
+            onPress: () => router.back(),
+          },
+        ]
+      );
+    };
+
+    // Register event listeners and store subscriptions
+    const sub1 = streamingService.on('stream_started', handleStreamStarted);
+    const sub2 = streamingService.on('dish_data', handleDishData);
+    const sub3 = streamingService.on('stream_complete', handleStreamComplete);
+    const sub4 = streamingService.on('stream_error', handleStreamError);
+
+    console.log("✅ Event listeners registered for:", tempSearchId);
+
+    // Cleanup: remove subscriptions
+    return () => {
+      console.log("🧹 Cleaning up event listeners for:", tempSearchId);
+      sub1?.remove?.();
+      sub2?.remove?.();
+      sub3?.remove?.();
+      sub4?.remove?.();
+    };
+  }, [isStreaming, tempSearchId, activeSearchId]);
+
+  // Helper: Create placeholder dish for loading state
+  const createPlaceholderDish = (index: number): DishData => {
+    return {
+      id: `placeholder_${index}`,
+      name: 'Loading...',
+      culture: '',
+      country: '',
+      dishType: '',
+      prepTime: '...',
+      calories: 0,
+      outdoorCost: 0,
+      homeCost: 0,
+      moneySaved: 0,
+      image: '',
+      isLiked: false,
+      isSaved: false,
+      shortDescription: '',
+      steps: [],
+      videoURL: '',
+      isLoading: true, // Flag to indicate placeholder
+    };
+  };
+
+  // Initialize streaming mode with placeholders
+  const initializeStreamingMode = () => {
+    console.log('🎬 Initializing streaming mode');
+    
+    const expectedCount = parseInt(params.expectedDishCount as string) || 3;
+    const ingredients = params.ingredients ? JSON.parse(params.ingredients as string) : [];
+    
+    // Create placeholder dishes
+    const placeholders = Array.from({ length: expectedCount }, (_, i) => 
+      createPlaceholderDish(i)
+    );
+    
+    setDishes(placeholders);
+    setHeaderInfo({
+      title: 'Finding Perfect Dishes...',
+      description: `Analyzing ${ingredients.length} ingredients`,
+      summary: 'Our AI is crafting personalized recipes just for you',
+    });
+    
+    setIsLoading(false); // We're ready to show placeholders
+  };
 
   const parseApiData = () => {
     try {
@@ -388,13 +579,16 @@ export default function DishesScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={dishesScreenStyles.dishesContent}
       >
-        {dishes.map((dish) => {
+        {dishes.map((dish, index) => {
           const isGenerated = dishStates.find((d) => d.id === dish.id);
           const progress = loadingProgress[dish.id as string] || 0;
+          
+          // Use index + id for unique keys to avoid conflicts during streaming
+          const uniqueKey = `dish-${index}-${dish.id}`;
 
           return isGenerated ? (
             <DishCompletedCard
-              key={`completed-${dish.id}`}
+              key={uniqueKey}
               dish={dish}
               onPress={handleDishPress}
               onLike={handleLike}
@@ -404,7 +598,7 @@ export default function DishesScreen() {
             />
           ) : (
             <DishLoadingCard
-              key={`loading-${dish.id}`}
+              key={uniqueKey}
               dish={dish}
               progress={progress}
               onLike={handleLike}

@@ -25,6 +25,7 @@ export const DishLoadingCard: React.FC<Props> = ({
 }) => {
   const theme = useTheme();
   const isLoadingCard = progress < 100;
+  const isPlaceholder = dish.isLoading; // Check if this is a streaming placeholder
 
   return (
     <View
@@ -39,15 +40,35 @@ export const DishLoadingCard: React.FC<Props> = ({
       <View
         style={[
           dishCardStyles.dishContent,
-          isLoadingCard && dishCardStyles.blurredContent,
+          (isLoadingCard || isPlaceholder) && dishCardStyles.blurredContent,
         ]}
       >
         <View style={dishCardStyles.imageSection}>
-          <Image
-            source={{ uri: dish.image }}
-            style={dishCardStyles.dishImage}
-            resizeMode="cover"
-          />
+          {dish.image ? (
+            <Image
+              source={{ uri: dish.image }}
+              style={dishCardStyles.dishImage}
+              resizeMode="cover"
+            />
+          ) : (
+            // Placeholder skeleton for image
+            <View
+              style={[
+                dishCardStyles.dishImage,
+                {
+                  backgroundColor: theme.colors.background.primary,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                },
+              ]}
+            >
+              <Ionicons
+                name="image-outline"
+                size={40}
+                color={theme.colors.text.tertiary}
+              />
+            </View>
+          )}
         </View>
 
         <View style={dishCardStyles.contentSection}>
@@ -55,10 +76,10 @@ export const DishLoadingCard: React.FC<Props> = ({
             <Text
               style={[
                 dishCardStyles.dishName,
-                { color: theme.colors.text.primary },
+                { color: isPlaceholder ? theme.colors.text.tertiary : theme.colors.text.primary },
               ]}
             >
-              {truncateName(dish.name)}
+              {dish.name === 'Loading...' ? 'Crafting recipe...' : truncateName(dish.name)}
             </Text>
           </View>
 
@@ -75,7 +96,7 @@ export const DishLoadingCard: React.FC<Props> = ({
                   { color: theme.colors.accent.primary },
                 ]}
               >
-                {dish.calories} cal
+                {dish.calories || '...'} cal
               </Text>
             </View>
 
@@ -83,14 +104,14 @@ export const DishLoadingCard: React.FC<Props> = ({
               <View style={dishCardStyles.outdoorCost}>
                 <Ionicons name="storefront-outline" size={10} color="#FF6B6B" />
                 <Text style={dishCardStyles.outdoorCostText}>
-                  ${dish.outdoorCost}
+                  ${dish.outdoorCost || '...'}
                 </Text>
               </View>
               <View style={dishCardStyles.costSeparator} />
               <View style={dishCardStyles.homeCost}>
                 <Ionicons name="home-outline" size={10} color="#4ECDC4" />
                 <Text style={dishCardStyles.homeCostText}>
-                  ${dish.homeCost}
+                  ${dish.homeCost || '...'}
                 </Text>
               </View>
             </View>
@@ -98,21 +119,34 @@ export const DishLoadingCard: React.FC<Props> = ({
 
           <View style={dishCardStyles.metadataRow}>
             <View style={dishCardStyles.metadataContainer}>
-              <View
-                style={[
-                  dishCardStyles.cultureChip,
-                  { backgroundColor: getCountryBackgroundColor(dish.culture) },
-                ]}
-              >
-                <Text style={dishCardStyles.cultureText}>{dish.culture}</Text>
-              </View>
+              {dish.culture ? (
+                <View
+                  style={[
+                    dishCardStyles.cultureChip,
+                    { backgroundColor: getCountryBackgroundColor(dish.culture) },
+                  ]}
+                >
+                  <Text style={dishCardStyles.cultureText}>{dish.culture}</Text>
+                </View>
+              ) : (
+                <View
+                  style={[
+                    dishCardStyles.cultureChip,
+                    { backgroundColor: theme.colors.background.primary },
+                  ]}
+                >
+                  <Text style={[dishCardStyles.cultureText, { color: theme.colors.text.tertiary }]}>
+                    ...
+                  </Text>
+                </View>
+              )}
               <Text
                 style={[
                   dishCardStyles.metadataText,
                   { color: theme.colors.text.secondary },
                 ]}
               >
-                • {dish.dishType} • {dish.prepTime}
+                • {dish.dishType || '...'} • {dish.prepTime || '...'}
               </Text>
             </View>
           </View>
@@ -129,7 +163,7 @@ export const DishLoadingCard: React.FC<Props> = ({
               },
             ]}
             onPress={() => onLike(dish)}
-            disabled={isLoadingCard}
+            disabled={isLoadingCard || isPlaceholder}
           >
             <Ionicons
               name={dish.isLiked ? "heart" : "heart-outline"}
@@ -148,7 +182,7 @@ export const DishLoadingCard: React.FC<Props> = ({
               },
             ]}
             onPress={() => onSave(dish)}
-            disabled={isLoadingCard}
+            disabled={isLoadingCard || isPlaceholder}
           >
             <Ionicons
               name={dish.isSaved ? "bookmark" : "bookmark-outline"}
@@ -163,7 +197,11 @@ export const DishLoadingCard: React.FC<Props> = ({
         </View>
       </View>
 
-      <AILoadingOverlay progress={progress} isVisible={isLoadingCard} />
+      {/* Show AI loading overlay for both AI generation and streaming placeholders */}
+      <AILoadingOverlay 
+        progress={isPlaceholder ? 50 : progress} 
+        isVisible={isLoadingCard || isPlaceholder} 
+      />
     </View>
   );
 };

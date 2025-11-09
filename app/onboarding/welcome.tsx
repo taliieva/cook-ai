@@ -111,7 +111,7 @@ export default function WelcomeScreen() {
         console.log('Guest tokens stored ✅');
 
         // Navigate to onboarding
-        router.replace('/questions/CookingExperienceScreen');
+        router.replace('/onboarding/questions/CookingExperienceScreen');
       } else {
         throw new Error('Guest authentication failed');
       }

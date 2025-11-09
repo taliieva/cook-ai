@@ -37,7 +37,7 @@ export default function CookingExperienceScreen() {
 
   const handleNext = () => {
     // Store the selected experience
-    router.push('/questions/CookingModeScreen');
+    router.push('/onboarding/questions/CookingModeScreen');
   };
 
   return (

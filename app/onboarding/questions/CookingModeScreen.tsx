@@ -30,7 +30,7 @@ export default function CookingModeScreen() {
   ];
 
   const handleNext = () => {
-    router.push('/questions/AgeScreen');
+    router.push('/onboarding/questions/AgeScreen');
   };
 
   return (

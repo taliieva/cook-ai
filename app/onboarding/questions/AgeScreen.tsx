@@ -42,7 +42,7 @@ export default function AgeScreen() {
   ];
 
   const handleNext = () => {
-    router.push('/questions/CuisinePreferenceScreen');
+    router.push('/onboarding/questions/CuisinePreferenceScreen');
   };
 
   return (

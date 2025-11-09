@@ -57,7 +57,7 @@ export default function IngredientsAvailableScreen() {
 
   const handleNext = () => {
     // Complete onboarding - navigate to main app
-    router.push('/onboarding/ingredients-search');
+    router.push('/main/home');
   };
 
   return (
