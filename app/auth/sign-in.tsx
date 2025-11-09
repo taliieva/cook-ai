@@ -293,8 +293,8 @@ export default function SignInScreen() {
         const shouldShowOnboarding = data.data.isNewUser || data.data.hasCompletedOnboarding === false;
         
         if (shouldShowOnboarding) {
-          console.log("📍 Navigating to onboarding (new user or explicitly incomplete)");
-          router.replace("/onboarding/choose-ingredients");
+          console.log("📍 Navigating to onboarding questions (new user or explicitly incomplete)");
+          router.replace("/questions/CookingExperienceScreen");
         } else {
           console.log("📍 Navigating to main app (returning user with completed onboarding)");
           router.replace("/onboarding/ingredients-search");
