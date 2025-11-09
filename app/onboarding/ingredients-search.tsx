@@ -14,10 +14,12 @@ import {
 
 // Import your PNG icon
 import siriLogo from "../../assets/images/ai-logo.png";
-import BillingComponent from "../main/billing/BillingComponent";
+import InsightsScreen from "../main/insight";
 import LikedComponent from "../main/liked/LikedComponent";
 import AIPoweredComponent from "../main/search/AIPoweredComponent";
-import InsightsScreen from "../main/insight";
+
+// TODO: Import and initialize Superwall when ready
+// import Superwall from '@superwall/react-native';
 
 
 const { width, height } = Dimensions.get("window");
@@ -79,11 +81,12 @@ const tabs = [
     type: "icon",
   },
   {
-    id: "billing",
+    id: "premium",
     icon: "diamond-outline",
     activeIcon: "diamond",
     label: "Premium",
     type: "icon",
+    isPaywall: true, // Special flag to open Superwall
   },
 ];
 
@@ -100,13 +103,26 @@ export default function UnifiedMainScreen() {
   const [userPlan, setUserPlan] = useState("free");
 
   // Handle tab switching
-  const handleTabPress = (tab) => {
-    setActiveTab(tab);
+  const handleTabPress = (tabId) => {
+    // Check if it's the premium tab - show Superwall instead of switching tabs
+    const selectedTab = tabs.find(t => t.id === tabId);
+    if (selectedTab?.isPaywall) {
+      console.log("🔓 Opening Superwall paywall from Premium tab");
+      handleUpgrade();
+      return;
+    }
+    
+    setActiveTab(tabId);
   };
 
-  // Handle upgrade from any component
+  // Handle upgrade from any component - Show Superwall paywall
   const handleUpgrade = () => {
-    setActiveTab("billing");
+    console.log("🔓 Showing Superwall paywall for upgrade");
+    // TODO: Implement Superwall paywall display
+    // Superwall.register('upgrade_clicked', {
+    //   source: 'app_navigation',
+    //   user_plan: userPlan
+    // });
   };
 
   // Handle search again from insights
@@ -173,8 +189,6 @@ export default function UnifiedMainScreen() {
         return <InsightsScreen />;
       case "liked":
         return <LikedComponent userPlan={userPlan} onUpgrade={handleUpgrade} />;
-      case "billing":
-        return <BillingComponent />;
       default:
         return (
           <AIPoweredComponent

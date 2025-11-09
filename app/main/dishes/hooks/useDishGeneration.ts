@@ -4,11 +4,11 @@ import { useState } from "react";
 
 export const useDishGeneration = () => {
     const [loadingProgress, setLoadingProgress] = useState<{
-        [key: number]: number;
+        [key: string]: number;
     }>({});
 
     const simulateDishGeneration = (
-        dishId: number,
+        dishId: string,
         index: number
     ): Promise<void> => {
         return new Promise((resolve) => {
@@ -57,7 +57,7 @@ export const useDishGeneration = () => {
     };
 
     const simulateAIRecipeGeneration = async (dishesToGenerate: DishData[]) => {
-        const initialProgress: { [key: number]: number } = {};
+        const initialProgress: { [key: string]: number } = {};
         dishesToGenerate.forEach((dish) => {
             initialProgress[dish.id] = 0;
         });

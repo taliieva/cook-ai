@@ -267,3 +267,116 @@ export async function fetchWithAuth(
 export async function getRecipes() {
   return fetchWithAuth("https://cook-ai-backend-production.up.railway.app/v1/recipes");
 }
+
+// ✅ Sign Out - Logout user and invalidate session
+export async function signOut(): Promise<{ success: boolean; message: string }> {
+  try {
+    const accessToken = await SecureStore.getItemAsync("accessToken");
+    
+    if (!accessToken) {
+      // No token, just clear local data
+      await clearAuthTokens();
+      return {
+        success: true,
+        message: "Signed out successfully"
+      };
+    }
+
+    // Call backend signout endpoint
+    const response = await fetch(
+      "https://cook-ai-backend-production.up.railway.app/v1/auth/signout",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${accessToken}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    const data = await response.json();
+
+    // Always clear local data, even if API call fails
+    await clearAuthTokens();
+
+    if (data.success) {
+      return {
+        success: true,
+        message: data.data?.message || "Successfully signed out"
+      };
+    } else {
+      return {
+        success: true, // Still successful locally
+        message: "Signed out from device"
+      };
+    }
+  } catch (error) {
+    console.error("Sign out error:", error);
+    
+    // Even if API fails, clear local data
+    await clearAuthTokens();
+    
+    return {
+      success: true,
+      message: "Signed out from device"
+    };
+  }
+}
+
+// ✅ Delete Account - Request account deletion with 30-day grace period
+export async function deleteAccount(): Promise<{
+  success: boolean;
+  message: string;
+  gracePeriodEnds?: string;
+  daysRemaining?: number;
+  canReactivate?: boolean;
+}> {
+  try {
+    const accessToken = await SecureStore.getItemAsync("accessToken");
+    
+    if (!accessToken) {
+      return {
+        success: false,
+        message: "Authentication required to delete account"
+      };
+    }
+
+    // Call backend delete account endpoint
+    const response = await fetch(
+      "https://cook-ai-backend-production.up.railway.app/v1/auth/account",
+      {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${accessToken}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    const data = await response.json();
+
+    if (data.success) {
+      // Clear local data after successful deletion request
+      await clearAuthTokens();
+
+      return {
+        success: true,
+        message: data.data?.message || "Account deletion requested",
+        gracePeriodEnds: data.data?.gracePeriodEnds,
+        daysRemaining: data.data?.gracePeriodDays || data.data?.daysRemaining || 30,
+        canReactivate: data.data?.canReactivate !== false
+      };
+    } else {
+      return {
+        success: false,
+        message: data.message || "Failed to delete account"
+      };
+    }
+  } catch (error) {
+    console.error("Delete account error:", error);
+    return {
+      success: false,
+      message: "Network error. Please try again."
+    };
+  }
+}

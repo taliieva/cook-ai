@@ -65,7 +65,7 @@ export const useDishData = () => {
 
   const setFallbackData = () => {
     setDishData({
-      id: 1,
+      id: "fallback-1",
       name: "Delicious Recipe",
       culture: "International",
       image:

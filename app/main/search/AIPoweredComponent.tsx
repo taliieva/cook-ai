@@ -266,6 +266,8 @@ export default function AIPoweredComponent({
       }
 
       console.log("Navigating to: /main/dishes");
+      console.log('searchId', data.searchId);
+      
       // router.push('/main/dishes')
       router.push({
         pathname: "/main/dishes",
@@ -273,14 +275,13 @@ export default function AIPoweredComponent({
           country: selectedCountry.code,
           mode: selectedMode.code,
           ingredients: JSON.stringify(ingredients),
-          dishData: JSON.stringify(data.dishData), // ✅ Correct!
+          dishData: JSON.stringify(data.dishData),
           localizedSummary: JSON.stringify(data.localizedSummary || {}),
+          searchId: data.searchId || "", // ✅ CRITICAL: Pass searchId for like/save functionality
           requestId: data.requestId || "",
           usageInfo: JSON.stringify(data.usageInfo || {}),
         },
       });
-
-      console.log('searchId', data.searchId);
     } catch (error) {
       console.error("Error fetching dishes:", error);
       Alert.alert(

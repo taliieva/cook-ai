@@ -288,11 +288,15 @@ export default function SignInScreen() {
         });
 
         // Navigate based on user status and onboarding completion
-        if (data.data.isNewUser || !data.data.hasCompletedOnboarding) {
-          console.log("📍 Navigating to onboarding (new user or incomplete)");
+        // ✅ For returning users (isNewUser: false), assume onboarding is complete unless explicitly set to false
+        // This prevents showing onboarding again after logout/login
+        const shouldShowOnboarding = data.data.isNewUser || data.data.hasCompletedOnboarding === false;
+        
+        if (shouldShowOnboarding) {
+          console.log("📍 Navigating to onboarding (new user or explicitly incomplete)");
           router.replace("/onboarding/choose-ingredients");
         } else {
-          console.log("📍 Navigating to search (returning user)");
+          console.log("📍 Navigating to main app (returning user with completed onboarding)");
           router.replace("/onboarding/ingredients-search");
         }
       } else {

@@ -4,12 +4,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  Text,
-  TouchableOpacity,
-  View
+    Alert,
+    SafeAreaView,
+    ScrollView,
+    StatusBar,
+    Text,
+    TouchableOpacity,
+    View
 } from "react-native";
 import { DishCompletedCard } from "./components/DishCompletedCard";
 import { DishLoadingCard } from "./components/DishLoadingCard";
@@ -18,9 +19,9 @@ import { useLikeRecipe } from "./hooks/useLikeRecipes";
 import { useSaveRecipe } from "./hooks/useSaveRecipe";
 import { dishesScreenStyles } from "./styles/dishesScreenStyles";
 import {
-  getCountryBackgroundColor,
-  transformApiDishesToDishData,
-  truncateName,
+    getCountryBackgroundColor,
+    transformApiDishesToDishData,
+    truncateName,
 } from "./utils/dishHelpers";
 
 export default function DishesScreen() {
@@ -125,7 +126,17 @@ export default function DishesScreen() {
   };
 
   const handleLike = async (dish: DishData) => {
-    console.log('index dish data', dish)
+    // Get the searchId from params
+    const searchId = params.searchId as string;
+    
+    if (!searchId) {
+      console.error("No searchId available");
+      Alert.alert("Error", "Unable to like recipe. Please try generating recipes again.");
+      return;
+    }
+
+    console.log('Liking recipe:', { searchId, dishName: dish.name });
+    
     // Optimistic UI update
     setDishStates((prev) =>
       prev.map((d) =>
@@ -134,16 +145,47 @@ export default function DishesScreen() {
     );
 
     try {
-      const res = await likeRecipe(dish.id, dish.name);
+      const res = await likeRecipe(searchId, dish.name);
       if (!res.success) throw new Error(res.error);
-    } catch (err) {
+      console.log("✅ Recipe liked successfully");
+    } catch (err: any) {
       console.error("Like error:", err);
-      // Revert if failed
+      
+      // Revert optimistic UI update
       setDishStates((prev) =>
         prev.map((d) =>
           d.id === dish.id ? { ...d, isLiked: !d.isLiked } : d
         )
       );
+
+      // Show user-friendly error message
+      const errorMessage = err.message || "Failed to like recipe";
+      
+      if (errorMessage.includes("Free users can only like")) {
+        // Premium upgrade prompt - Show Superwall paywall
+        Alert.alert(
+          "Upgrade to Premium",
+          "You've reached your free plan limit. Upgrade to Premium to like unlimited recipes!",
+          [
+            { text: "Not Now", style: "cancel" },
+            { 
+              text: "Upgrade", 
+              onPress: () => {
+                console.log("🔓 Opening Superwall paywall from like limit");
+                // TODO: Implement Superwall paywall display
+                // Superwall.register('like_limit_reached', {
+                //   source: 'recipe_like',
+                //   feature: 'likes'
+                // });
+              },
+              style: "default"
+            }
+          ]
+        );
+      } else {
+        // Generic error
+        Alert.alert("Error", errorMessage);
+      }
     }
   };
 
@@ -156,6 +198,16 @@ export default function DishesScreen() {
   // };
 
   const handleSave = async (dish: DishData) => {
+    // Get the searchId from params
+    const searchId = params.searchId as string;
+    
+    if (!searchId) {
+      console.error("No searchId available");
+      Alert.alert("Error", "Unable to save recipe. Please try generating recipes again.");
+      return;
+    }
+
+    console.log('Saving recipe:', { searchId, dishName: dish.name });
     
     // Optimistic UI update
     setDishStates((prev) =>
@@ -165,16 +217,47 @@ export default function DishesScreen() {
     );
 
     try {
-      const res = await saveRecipe(dish.id, dish.name);
+      const res = await saveRecipe(searchId, dish.name);
       if (!res.success) throw new Error(res.error);
-    } catch (err) {
+      console.log("✅ Recipe saved successfully");
+    } catch (err: any) {
       console.error("Save error:", err);
-      // Revert if failed
+      
+      // Revert optimistic UI update
       setDishStates((prev) =>
         prev.map((d) =>
           d.id === dish.id ? { ...d, isSaved: !d.isSaved } : d
         )
       );
+
+      // Show user-friendly error message
+      const errorMessage = err.message || "Failed to save recipe";
+      
+      if (errorMessage.includes("Free users can only save") || errorMessage.includes("Upgrade to premium")) {
+        // Premium upgrade prompt - Show Superwall paywall
+        Alert.alert(
+          "Upgrade to Premium",
+          "You've reached your free plan limit. Upgrade to Premium to save unlimited recipes!",
+          [
+            { text: "Not Now", style: "cancel" },
+            { 
+              text: "Upgrade", 
+              onPress: () => {
+                console.log("🔓 Opening Superwall paywall from save limit");
+                // TODO: Implement Superwall paywall display
+                // Superwall.register('save_limit_reached', {
+                //   source: 'recipe_save',
+                //   feature: 'saves'
+                // });
+              },
+              style: "default"
+            }
+          ]
+        );
+      } else {
+        // Generic error
+        Alert.alert("Error", errorMessage);
+      }
     }
   };
 
@@ -307,7 +390,7 @@ export default function DishesScreen() {
       >
         {dishes.map((dish) => {
           const isGenerated = dishStates.find((d) => d.id === dish.id);
-          const progress = loadingProgress[dish.id] || 0;
+          const progress = loadingProgress[dish.id as string] || 0;
 
           return isGenerated ? (
             <DishCompletedCard

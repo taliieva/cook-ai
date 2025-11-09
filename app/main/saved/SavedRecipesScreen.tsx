@@ -3,6 +3,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+    ActivityIndicator,
+    Alert,
     Dimensions,
     Image,
     SafeAreaView,
@@ -14,76 +16,10 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import { useFetchSavedRecipes } from "../dishes/hooks/useFetchSavedRecipes";
+import { useSaveRecipe } from "../dishes/hooks/useSaveRecipe";
 
 const { width, height } = Dimensions.get("window");
-
-// Mock saved recipes data
-const savedRecipes = [
-  {
-    id: 1,
-    name: "Spaghetti Carbonara",
-    culture: "Italian",
-    dishType: "Pasta",
-    prepTime: "25 min",
-    calories: 520,
-    outdoorCost: 18,
-    homeCost: 6,
-    savedDate: "2024-12-15",
-    image:
-      "https://images.unsplash.com/photo-1612874742237-6526221588e3?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
-    ingredients: ["spaghetti", "eggs", "bacon", "parmesan", "black pepper"],
-    difficulty: "Medium",
-    rating: 4.8,
-  },
-  {
-    id: 2,
-    name: "Pad Thai",
-    culture: "Thai",
-    dishType: "Stir-fry",
-    prepTime: "35 min",
-    calories: 450,
-    outdoorCost: 16,
-    homeCost: 7,
-    savedDate: "2024-12-12",
-    image:
-      "https://images.unsplash.com/photo-1559314809-0f31657def5e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
-    ingredients: ["rice noodles", "shrimp", "bean sprouts", "tamarind", "peanuts"],
-    difficulty: "Hard",
-    rating: 4.6,
-  },
-  {
-    id: 3,
-    name: "Chicken Curry",
-    culture: "Indian",
-    dishType: "Curry",
-    prepTime: "45 min",
-    calories: 410,
-    outdoorCost: 14,
-    homeCost: 5,
-    savedDate: "2024-12-10",
-    image:
-      "https://images.unsplash.com/photo-1588166524941-3bf61a9c41db?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
-    ingredients: ["chicken", "curry powder", "coconut milk", "onions", "ginger"],
-    difficulty: "Medium",
-    rating: 4.7,
-  },
-  {
-    id: 4,
-    name: "Greek Moussaka",
-    culture: "Greek",
-    dishType: "Casserole",
-    prepTime: "60 min",
-    calories: 580,
-    outdoorCost: 25,
-    homeCost: 9,
-    savedDate: "2024-12-08",
-    image:
-      "https://images.unsplash.com/photo-1565299507177-b0ac66763828?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
-    ingredients: ["eggplant", "ground lamb", "bechamel", "tomatoes", "cheese"],
-    difficulty: "Hard",
-    rating: 4.9,
-  },
-];
 
 // Country color mapping
 const countryColors = {
@@ -110,28 +46,95 @@ const getDifficultyColor = (difficulty: string) => {
 export default function SavedRecipesScreen() {
   const router = useRouter();
   const theme = useTheme();
+  const { recipes: apiRecipes, loading, error, refreshRecipes } = useFetchSavedRecipes();
+  const { saveRecipe } = useSaveRecipe();
   const [searchText, setSearchText] = useState("");
-  const [recipes, setRecipes] = useState(savedRecipes);
   const [sortBy, setSortBy] = useState("recent"); // recent, name, difficulty
+  
+  // Transform API recipes to match component format
+  const recipes = apiRecipes.map(recipe => ({
+    id: recipe.id,
+    name: recipe.dishName,
+    culture: recipe.cuisineType,
+    dishType: recipe.dishType || "Main Course",
+    prepTime: recipe.prepTime || "25 min",
+    calories: recipe.calories || 400,
+    outdoorCost: recipe.outdoorCost || 15,
+    homeCost: recipe.homeCost || 6,
+    savedDate: recipe.savedAt,
+    image: recipe.pictureUrl || "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
+    ingredients: [], // Could parse from steps
+    difficulty: "Medium",
+    rating: 4.5,
+    searchId: recipe.searchId,
+    // Store full API data for detail view
+    apiRecipe: recipe,
+  }));
 
   const handleBack = () => {
     router.back();
   };
 
   const handleRecipePress = (recipe: any) => {
-    router.push(`/main/dishes/${recipe.id}`);
+    // Use the full API data that now includes steps and videoURL
+    const fullRecipe = recipe.apiRecipe || apiRecipes.find(r => r.id === recipe.id);
+    
+    // Construct complete dish data object with backend data
+    const dishData = {
+      id: recipe.id,
+      name: recipe.name,
+      culture: recipe.culture,
+      country: recipe.culture,
+      dishType: recipe.dishType,
+      prepTime: recipe.prepTime,
+      calories: recipe.calories,
+      outdoorCost: recipe.outdoorCost,
+      homeCost: recipe.homeCost,
+      moneySaved: recipe.outdoorCost - recipe.homeCost,
+      image: recipe.image,
+      isLiked: false,
+      isSaved: true,
+      shortDescription: fullRecipe?.shortDescription || "",
+      steps: fullRecipe?.steps || [],           // ✅ Now has real steps from backend
+      videoURL: fullRecipe?.videoURL || ""      // ✅ Now has real video URL from backend
+    };
+
+    console.log("📱 Navigating to dish detail with full data:", {
+      hasSteps: dishData.steps.length > 0,
+      hasVideo: !!dishData.videoURL,
+      stepsCount: dishData.steps.length
+    });
+
+    router.push({
+      pathname: `/main/dishes/${recipe.id}` as any,
+      params: {
+        dishData: JSON.stringify(dishData),
+        searchedIngredients: JSON.stringify(recipe.ingredients || []),
+        searchId: recipe.searchId || "",
+      },
+    });
   };
 
-  const handleUnsaveRecipe = (recipeId: number) => {
-    setRecipes(prev => prev.filter(recipe => recipe.id !== recipeId));
+  const handleUnsaveRecipe = async (recipe: any) => {
+    try {
+      // Call the save API again to toggle (unsave)
+      const res = await saveRecipe(recipe.searchId, recipe.name);
+      if (res.success) {
+        // Refresh the list after successful unsave
+        await refreshRecipes();
+        console.log("✅ Recipe unsaved successfully");
+      } else {
+        Alert.alert("Error", res.error || "Failed to unsave recipe");
+      }
+    } catch (err) {
+      console.error("Error unsaving recipe:", err);
+      Alert.alert("Error", "Failed to remove recipe from saved list");
+    }
   };
 
   const filteredRecipes = recipes.filter(recipe =>
     recipe.name.toLowerCase().includes(searchText.toLowerCase()) ||
-    recipe.culture.toLowerCase().includes(searchText.toLowerCase()) ||
-    recipe.ingredients.some(ingredient => 
-      ingredient.toLowerCase().includes(searchText.toLowerCase())
-    )
+    recipe.culture.toLowerCase().includes(searchText.toLowerCase())
   );
 
   const sortedRecipes = [...filteredRecipes].sort((a, b) => {
@@ -208,7 +211,7 @@ export default function SavedRecipesScreen() {
             </Text>
             <TouchableOpacity
               style={styles.unsaveButton}
-              onPress={() => handleUnsaveRecipe(recipe.id)}
+              onPress={() => handleUnsaveRecipe(recipe)}
             >
               <Ionicons
                 name="bookmark"
@@ -449,7 +452,45 @@ export default function SavedRecipesScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.recipesContent}
       >
-        {sortedRecipes.length > 0 ? (
+        {loading ? (
+          <View style={styles.emptyState}>
+            <ActivityIndicator size="large" color={theme.colors.accent.primary} />
+            <Text style={[styles.emptyText, { color: theme.colors.text.secondary, marginTop: 16 }]}>
+              Loading your saved recipes...
+            </Text>
+          </View>
+        ) : error ? (
+          <View style={styles.emptyState}>
+            <Ionicons
+              name="alert-circle-outline"
+              size={64}
+              color={theme.colors.text.secondary}
+              style={styles.emptyIcon}
+            />
+            <Text
+              style={[
+                styles.emptyTitle,
+                { color: theme.colors.text.primary },
+              ]}
+            >
+              Error Loading Recipes
+            </Text>
+            <Text
+              style={[
+                styles.emptyText,
+                { color: theme.colors.text.secondary },
+              ]}
+            >
+              {error}
+            </Text>
+            <TouchableOpacity 
+              style={[styles.viewButton, { backgroundColor: theme.colors.accent.primary, marginTop: 16, paddingVertical: 12, paddingHorizontal: 24, borderRadius: 8 }]}
+              onPress={refreshRecipes}
+            >
+              <Text style={[styles.viewButtonText, { color: "white" }]}>Try Again</Text>
+            </TouchableOpacity>
+          </View>
+        ) : sortedRecipes.length > 0 ? (
           sortedRecipes.map((recipe) => renderRecipeCard(recipe))
         ) : (
           <View style={styles.emptyState}>

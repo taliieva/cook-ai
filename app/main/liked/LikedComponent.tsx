@@ -4,6 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Dimensions,
   SafeAreaView,
@@ -15,82 +16,37 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import { useFetchLikedRecipes } from "../dishes/hooks/useFetchLikedRecipes";
+import { useLikeRecipe } from "../dishes/hooks/useLikeRecipes";
 
 const { width } = Dimensions.get("window");
-
-// Mock liked recipes data
-const mockLikedRecipes = [
-  {
-    id: 1,
-    name: "Spaghetti Carbonara",
-    cuisine: "Italian",
-    cookTime: "20 min",
-    difficulty: "Easy",
-    ingredients: ["pasta", "eggs", "bacon", "parmesan"],
-    rating: 4.8,
-    image: "🍝",
-    dateAdded: "2025-08-28",
-    description: "Classic Italian pasta dish with creamy egg and cheese sauce"
-  },
-  {
-    id: 2,
-    name: "Chicken Teriyaki Bowl",
-    cuisine: "Japanese",
-    cookTime: "25 min",
-    difficulty: "Medium",
-    ingredients: ["chicken", "rice", "teriyaki sauce", "vegetables"],
-    rating: 4.6,
-    image: "🍱",
-    dateAdded: "2025-08-25",
-    description: "Delicious grilled chicken with sweet teriyaki glaze over rice"
-  },
-  {
-    id: 3,
-    name: "Vegetable Pad Thai",
-    cuisine: "Thai",
-    cookTime: "15 min",
-    difficulty: "Easy",
-    ingredients: ["rice noodles", "vegetables", "tofu", "pad thai sauce"],
-    rating: 4.5,
-    image: "🍜",
-    dateAdded: "2025-08-20",
-    description: "Authentic Thai stir-fried noodles with fresh vegetables"
-  },
-  {
-    id: 4,
-    name: "Beef Tacos",
-    cuisine: "Mexican",
-    cookTime: "30 min",
-    difficulty: "Medium",
-    ingredients: ["ground beef", "tortillas", "onions", "spices"],
-    rating: 4.7,
-    image: "🌮",
-    dateAdded: "2025-08-15",
-    description: "Flavorful ground beef tacos with traditional Mexican spices"
-  },
-  {
-    id: 5,
-    name: "Greek Salad",
-    cuisine: "Greek",
-    cookTime: "10 min",
-    difficulty: "Easy",
-    ingredients: ["tomatoes", "cucumber", "feta", "olives", "olive oil"],
-    rating: 4.4,
-    image: "🥗",
-    dateAdded: "2025-08-10",
-    description: "Fresh Mediterranean salad with feta cheese and olives"
-  },
-];
 
 export default function LikedComponent({ userPlan = "free", onUpgrade, standalone = false }) {
   const theme = useTheme();
   const router = useRouter();
   const params = useLocalSearchParams();
+  const { recipes: apiRecipes, loading, error, refreshRecipes } = useFetchLikedRecipes();
+  const { likeRecipe } = useLikeRecipe();
   
   // Check if standalone mode from params or prop
   const isStandalone = standalone || params.standalone === 'true';
   
-  const [likedRecipes, setLikedRecipes] = useState(mockLikedRecipes);
+  // Transform API recipes to match component format
+  const likedRecipes = apiRecipes.map(recipe => ({
+    id: recipe.id,
+    name: recipe.dishName,
+    cuisine: recipe.cuisineType,
+    cookTime: recipe.prepTime || "25 min",
+    difficulty: "Medium", // Default value
+    ingredients: [], // We could parse from steps if needed
+    rating: 4.5, // Default value
+    image: "🍽️", // Default emoji
+    dateAdded: recipe.likedAt,
+    description: recipe.shortDescription || "Delicious recipe",
+    searchId: recipe.searchId,
+    // Store full data for detail view
+    apiRecipe: recipe,
+  }));
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
 
@@ -119,7 +75,7 @@ export default function LikedComponent({ userPlan = "free", onUpgrade, standalon
     return matchesSearch && matchesFilter;
   });
 
-  const handleRemoveFromLiked = (recipeId) => {
+  const handleRemoveFromLiked = async (recipe: any) => {
     Alert.alert(
       "Remove Recipe",
       "Are you sure you want to remove this recipe from your liked list?",
@@ -128,8 +84,21 @@ export default function LikedComponent({ userPlan = "free", onUpgrade, standalon
         {
           text: "Remove",
           style: "destructive",
-          onPress: () => {
-            setLikedRecipes(prev => prev.filter(recipe => recipe.id !== recipeId));
+          onPress: async () => {
+            try {
+              // Call the like API again to toggle (unlike)
+              const res = await likeRecipe(recipe.searchId, recipe.name);
+              if (res.success) {
+                // Refresh the list after successful unlike
+                await refreshRecipes();
+                console.log("✅ Recipe unliked successfully");
+              } else {
+                Alert.alert("Error", res.error || "Failed to unlike recipe");
+              }
+            } catch (err) {
+              console.error("Error unliking recipe:", err);
+              Alert.alert("Error", "Failed to remove recipe from liked list");
+            }
           },
         },
       ]
@@ -177,7 +146,7 @@ export default function LikedComponent({ userPlan = "free", onUpgrade, standalon
 
         <TouchableOpacity
           style={styles.removeButton}
-          onPress={() => handleRemoveFromLiked(recipe.id)}
+          onPress={() => handleRemoveFromLiked(recipe)}
         >
           <Ionicons
             name="heart"
@@ -224,7 +193,45 @@ export default function LikedComponent({ userPlan = "free", onUpgrade, standalon
       <View style={styles.actionButtons}>
         <TouchableOpacity 
           style={[styles.viewButton, { backgroundColor: theme.colors.accent.primary }]}
-          onPress={() => router.push(`/main/dishes/${recipe.id}`)}
+          onPress={() => {
+            // Use the full API data that now includes steps and videoURL
+            const fullRecipe = recipe.apiRecipe || apiRecipes.find(r => r.id === recipe.id);
+            
+            // Construct complete dish data object
+            const dishData = {
+              id: recipe.id,
+              name: recipe.name,
+              culture: recipe.cuisine,
+              country: recipe.cuisine,
+              dishType: fullRecipe?.dishType || "Main Course",
+              prepTime: fullRecipe?.prepTime || recipe.cookTime,
+              calories: fullRecipe?.calories || 400,
+              outdoorCost: fullRecipe?.outdoorCost || 15,
+              homeCost: fullRecipe?.homeCost || 6,
+              moneySaved: (fullRecipe?.outdoorCost || 15) - (fullRecipe?.homeCost || 6),
+              image: fullRecipe?.pictureUrl || "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b",
+              isLiked: true,
+              isSaved: false,
+              shortDescription: fullRecipe?.shortDescription || recipe.description,
+              steps: fullRecipe?.steps || [],           // ✅ Now has real steps from backend
+              videoURL: fullRecipe?.videoURL || ""      // ✅ Now has real video URL from backend
+            };
+
+            console.log("📱 Navigating to dish detail with full data:", {
+              hasSteps: dishData.steps.length > 0,
+              hasVideo: !!dishData.videoURL,
+              stepsCount: dishData.steps.length
+            });
+
+            router.push({
+              pathname: `/main/dishes/${recipe.id}` as any,
+              params: {
+                dishData: JSON.stringify(dishData),
+                searchedIngredients: JSON.stringify(recipe.ingredients || []),
+                searchId: recipe.searchId || "",
+              },
+            });
+          }}
         >
           <Text style={styles.viewButtonText}>View Recipe</Text>
         </TouchableOpacity>
@@ -288,7 +295,37 @@ export default function LikedComponent({ userPlan = "free", onUpgrade, standalon
         </Text>
       </View>
 
-      {likedRecipes.length === 0 ? (
+      {loading ? (
+        // Loading State
+        <View style={styles.emptyState}>
+          <ActivityIndicator size="large" color={theme.colors.accent.primary} />
+          <Text style={[styles.emptySubtitle, { color: theme.colors.text.secondary, marginTop: 16 }]}>
+            Loading your liked recipes...
+          </Text>
+        </View>
+      ) : error ? (
+        // Error State
+        <View style={styles.emptyState}>
+          <Ionicons
+            name="alert-circle-outline"
+            size={64}
+            color={theme.colors.text.secondary}
+            style={styles.emptyIcon}
+          />
+          <Text style={[styles.emptyTitle, { color: theme.colors.text.primary }]}>
+            Error Loading Recipes
+          </Text>
+          <Text style={[styles.emptySubtitle, { color: theme.colors.text.secondary }]}>
+            {error}
+          </Text>
+          <TouchableOpacity 
+            style={[styles.viewButton, { backgroundColor: theme.colors.accent.primary, marginTop: 16 }]}
+            onPress={refreshRecipes}
+          >
+            <Text style={styles.viewButtonText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      ) : likedRecipes.length === 0 ? (
         // Empty State
         <View style={styles.emptyState}>
           <Ionicons
@@ -298,7 +335,7 @@ export default function LikedComponent({ userPlan = "free", onUpgrade, standalon
             style={styles.emptyIcon}
           />
           <Text style={[styles.emptyTitle, { color: theme.colors.text.primary }]}>
-            No Saved Recipes Yet
+            No Liked Recipes Yet
           </Text>
           <Text style={[styles.emptySubtitle, { color: theme.colors.text.secondary }]}>
             Start exploring recipes and save your favorites by tapping the heart icon!

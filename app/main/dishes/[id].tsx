@@ -26,7 +26,7 @@ import { dishDetailStyles } from "./styles/dishDetailStyles";
 export default function DishDetailScreen() {
   const router = useRouter();
   const theme = useTheme();
-  const { dishData, ingredients } = useDishData(); // removed searchId since we’ll use dishData.id
+  const { dishData, ingredients, searchId } = useDishData();
   const [isFavorite, setIsFavorite] = useState(false);
   const { likeRecipe, loading } = useLikeRecipe();
 
@@ -50,27 +50,61 @@ export default function DishDetailScreen() {
     }
   };
 
-  // ✅ Updated Like logic based on new API (dishData.id instead of searchId)
+  // ✅ Fixed: Use searchId from params, not dish.id
   const handleToggleFavorite = async () => {
-    if (!dishData?.id || !dishData?.name) return;
+    if (!searchId || !dishData?.name) {
+      console.error("Missing searchId or dish name");
+      Alert.alert("Error", "Unable to like recipe. Please try again.");
+      return;
+    }
+
+    console.log('Liking recipe:', { searchId, dishName: dishData.name });
 
     // Optimistic UI
     setIsFavorite((prev) => !prev);
 
     try {
-      // 🔥 Use dishData.id as searchId (per your new backend design)
-      const res = await likeRecipe(dishData.id, dishData.name);
+      const res = await likeRecipe(searchId as string, dishData.name);
       
       if (res.success) {
         console.log("✅ Recipe liked:", res.data?.message);
       } else {
-        Alert.alert("Error", res.error || "Failed to like recipe");
-        setIsFavorite((prev) => !prev); // revert
+        throw new Error(res.error || "Failed to like recipe");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Like error:", err);
-      Alert.alert("Error", "Something went wrong");
-      setIsFavorite((prev) => !prev); // revert
+      
+      // Revert optimistic UI update
+      setIsFavorite((prev) => !prev);
+
+      // Show user-friendly error message
+      const errorMessage = err.message || "Failed to like recipe";
+      
+      if (errorMessage.includes("Free users can only like")) {
+        // Premium upgrade prompt - Show Superwall paywall
+        Alert.alert(
+          "Upgrade to Premium",
+          "You've reached your free plan limit. Upgrade to Premium to like unlimited recipes!",
+          [
+            { text: "Not Now", style: "cancel" },
+            { 
+              text: "Upgrade", 
+              onPress: () => {
+                console.log("🔓 Opening Superwall paywall from like limit (detail)");
+                // TODO: Implement Superwall paywall display
+                // Superwall.register('like_limit_reached', {
+                //   source: 'recipe_detail_like',
+                //   feature: 'likes'
+                // });
+              },
+              style: "default"
+            }
+          ]
+        );
+      } else {
+        // Generic error
+        Alert.alert("Error", errorMessage);
+      }
     }
   };
 
