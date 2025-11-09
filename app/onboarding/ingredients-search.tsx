@@ -11,12 +11,12 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
-
-// Import your PNG icon
-import siriLogo from "../../assets/images/ai-logo.png";
 import InsightsScreen from "../main/insight";
 import LikedComponent from "../main/liked/LikedComponent";
 import AIPoweredComponent from "../main/search/AIPoweredComponent";
+
+// Import your PNG icon
+const siriLogo = require("../../assets/images/ai-logo.png");
 
 // TODO: Import and initialize Superwall when ready
 // import Superwall from '@superwall/react-native';
@@ -97,13 +97,13 @@ export default function UnifiedMainScreen() {
   const [activeTab, setActiveTab] = useState("ai");
 
   // Shared state between components
-  const [ingredients, setIngredients] = useState([]);
+  const [ingredients, setIngredients] = useState<any[]>([]);
   const [selectedCountry, setSelectedCountry] = useState(countries[0]);
   const [selectedMode, setSelectedMode] = useState(modes[0]);
   const [userPlan, setUserPlan] = useState("free");
 
   // Handle tab switching
-  const handleTabPress = (tabId) => {
+  const handleTabPress = (tabId: string) => {
     // Check if it's the premium tab - show Superwall instead of switching tabs
     const selectedTab = tabs.find(t => t.id === tabId);
     if (selectedTab?.isPaywall) {
@@ -126,7 +126,7 @@ export default function UnifiedMainScreen() {
   };
 
   // Handle search again from insights
-  const handleSearchAgain = (searchTerms, cuisine, mode) => {
+  const handleSearchAgain = (searchTerms: any[], cuisine: string, mode?: string) => {
     setIngredients(searchTerms);
     setSelectedCountry(
       countries.find((c) => c.name === cuisine) || countries[0]
@@ -138,7 +138,7 @@ export default function UnifiedMainScreen() {
   };
 
   // Custom function to render tab icon
-  const renderTabIcon = (tab, isActive) => {
+  const renderTabIcon = (tab: any, isActive: boolean) => {
     if (tab.type === "image") {
       // Special handling for AI Search tab with PNG
       return (
