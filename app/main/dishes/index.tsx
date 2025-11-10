@@ -159,20 +159,51 @@ export default function DishesScreen() {
       // Accept from either searchId for errors
       if (event.searchId !== tempSearchId && event.searchId !== activeSearchId) return;
       
-      console.error('❌ Stream error:', event.error);
+      console.error('❌ Stream error:', event.error, 'Type:', event.errorType);
       setIsLoading(false);
       setStreamComplete(true);
       
-      Alert.alert(
-        'Error Loading Dishes',
-        event.error || 'Failed to load dishes. Please try again.',
-        [
-          {
-            text: 'Go Back',
-            onPress: () => router.back(),
-          },
-        ]
-      );
+      // Check if this is a limit-exceeded error (403)
+      if (event.errorType === 'LIMIT_EXCEEDED' || event.status === 403) {
+        // User has reached their free plan limit - show upgrade prompt
+        Alert.alert(
+          '🔓 Upgrade to Premium',
+          event.error || 'You\'ve reached your free plan limit. Upgrade to Premium for unlimited recipe searches!',
+          [
+            {
+              text: 'Not Now',
+              style: 'cancel',
+              onPress: () => router.back(),
+            },
+            {
+              text: 'Upgrade Now',
+              style: 'default',
+              onPress: () => {
+                console.log('🔓 Opening Superwall paywall from search limit');
+                router.back();
+                // TODO: Trigger Superwall paywall
+                // Superwall.register('search_limit_reached', {
+                //   source: 'recipe_search',
+                //   feature: 'searches',
+                //   limit_type: 'monthly'
+                // });
+              },
+            },
+          ]
+        );
+      } else {
+        // Generic error - show standard error message
+        Alert.alert(
+          'Error Loading Dishes',
+          event.error || 'Failed to load dishes. Please try again.',
+          [
+            {
+              text: 'Go Back',
+              onPress: () => router.back(),
+            },
+          ]
+        );
+      }
     };
 
     // Register event listeners and store subscriptions
@@ -305,20 +336,29 @@ export default function DishesScreen() {
       ? JSON.parse(params.ingredients as string)
       : [];
 
-    console.log("searchedIngredients dish", dish);
+    // Use activeSearchId (real backend ID) instead of params.searchId (temp ID)
+    const searchIdToPass = activeSearchId || params.searchId as string;
+    
+    console.log("Opening dish detail:", { 
+      dish: dish.name, 
+      searchId: searchIdToPass, 
+      tempId: params.searchId,
+      isStreaming 
+    });
+    
     router.push({
       pathname: `/main/dishes/${dish.id}` as any,
       params: {
         dishData: JSON.stringify(dish),
         searchedIngredients: JSON.stringify(searchedIngredients),
-        searchId: params.searchId,
+        searchId: searchIdToPass,
       },
     });
   };
 
   const handleLike = async (dish: DishData) => {
-    // Get the searchId from params
-    const searchId = params.searchId as string;
+    // Use activeSearchId (real backend ID) instead of params.searchId (temp ID)
+    const searchId = activeSearchId || params.searchId as string;
     
     if (!searchId) {
       console.error("No searchId available");
@@ -326,7 +366,7 @@ export default function DishesScreen() {
       return;
     }
 
-    console.log('Liking recipe:', { searchId, dishName: dish.name });
+    console.log('Liking recipe:', { searchId, dishName: dish.name, isStreaming, tempId: params.searchId });
     
     // Optimistic UI update
     setDishStates((prev) =>
@@ -389,8 +429,8 @@ export default function DishesScreen() {
   // };
 
   const handleSave = async (dish: DishData) => {
-    // Get the searchId from params
-    const searchId = params.searchId as string;
+    // Use activeSearchId (real backend ID) instead of params.searchId (temp ID)
+    const searchId = activeSearchId || params.searchId as string;
     
     if (!searchId) {
       console.error("No searchId available");
@@ -398,7 +438,7 @@ export default function DishesScreen() {
       return;
     }
 
-    console.log('Saving recipe:', { searchId, dishName: dish.name });
+    console.log('Saving recipe:', { searchId, dishName: dish.name, isStreaming, tempId: params.searchId });
     
     // Optimistic UI update
     setDishStates((prev) =>

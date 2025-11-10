@@ -150,6 +150,12 @@ export const AILoadingOverlay: React.FC<Props> = ({ progress, isVisible }) => {
 
                 <View style={aiLoadingStyles.modernTextContainer}>
                     <Text style={aiLoadingStyles.modernProgressText}>{Math.round(progress)}%</Text>
+                    <Text style={aiLoadingStyles.loadingSubtext}>
+                        {progress < 30 ? "Analyzing ingredients..." : 
+                         progress < 60 ? "Finding perfect recipes..." : 
+                         progress < 90 ? "Calculating nutrition..." : 
+                         "Almost ready!"}
+                    </Text>
                     <View style={aiLoadingStyles.modernProgressBar}>
                         <View style={aiLoadingStyles.modernProgressBarBg} />
                         <Animated.View

@@ -1,5 +1,6 @@
 // hooks/useSaveRecipe.ts
 import * as SecureStore from "expo-secure-store";
+import { ENV } from "@/config/env";
 import { useState } from "react";
 
 interface SaveRecipeResponse {
@@ -28,7 +29,7 @@ export const useSaveRecipe = () => {
       if (!token) throw new Error("Authentication required. Please log in again.");
 
       const response = await fetch(
-        "https://cook-ai-backend-production.up.railway.app/v1/recipes/save",
+        `${ENV.API_URL}/recipes/save`,
         {
           method: "POST",
           headers: {

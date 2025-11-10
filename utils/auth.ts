@@ -1,6 +1,7 @@
 import * as SecureStore from "expo-secure-store";
+import { ENV } from "@/config/env";
 
-const REFRESH_ENDPOINT = "https://cook-ai-backend-production.up.railway.app/v1/auth/refresh";
+const REFRESH_ENDPOINT = `${ENV.API_URL}/auth/refresh`;
 
 type RefreshResponse = {
   accessToken: string;
@@ -265,7 +266,7 @@ export async function fetchWithAuth(
 }
 
 export async function getRecipes() {
-  return fetchWithAuth("https://cook-ai-backend-production.up.railway.app/v1/recipes");
+  return fetchWithAuth(`${ENV.API_URL}/recipes`);
 }
 
 // ✅ Sign Out - Logout user and invalidate session
@@ -284,7 +285,7 @@ export async function signOut(): Promise<{ success: boolean; message: string }> 
 
     // Call backend signout endpoint
     const response = await fetch(
-      "https://cook-ai-backend-production.up.railway.app/v1/auth/signout",
+      `${ENV.API_URL}/auth/signout`,
       {
         method: "POST",
         headers: {
@@ -343,7 +344,7 @@ export async function deleteAccount(): Promise<{
 
     // Call backend delete account endpoint
     const response = await fetch(
-      "https://cook-ai-backend-production.up.railway.app/v1/auth/account",
+      `${ENV.API_URL}/auth/account`,
       {
         method: "DELETE",
         headers: {

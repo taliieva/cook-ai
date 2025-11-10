@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { LanguageSelector } from '@/components/ui/LanguageSelector';
 import { useTheme } from '@/hooks/useTheme';
+import { ENV } from '@/config/env';
 import * as Crypto from 'expo-crypto';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
@@ -45,7 +46,7 @@ export default function WelcomeScreen() {
 
   const handlePrivacyPress = async () => {
     try {
-      const url = 'https://thecookai.app/privacy';
+      const url = ENV.PRIVACY_POLICY_URL;
       const canOpen = await Linking.canOpenURL(url);
       if (canOpen) {
         await Linking.openURL(url);
@@ -68,55 +69,15 @@ export default function WelcomeScreen() {
       setLoading(true);
       console.log('Get Started clicked ✅');
 
-      // Generate or retrieve deviceId
-      let deviceId = await SecureStore.getItemAsync('deviceId');
-      if (!deviceId) {
-        deviceId = Crypto.randomUUID();
-        await SecureStore.setItemAsync('deviceId', deviceId);
-        console.log('New deviceId generated:', deviceId);
-      } else {
-        console.log('Existing deviceId found:', deviceId);
-      }
-
-      const body = {
-        deviceId,
-        platform: Platform.OS,
-        appVersion: '1.0.0',
-        locale: selectedLanguage === 'az' ? 'az-AZ' : 'en-US',
-      };
-
-      console.log("Sending guest auth request:", body);
-
-      const response = await fetchWithAuth(
-        'https://cook-ai-backend-production.up.railway.app/v1/auth/guest',
-        {
-          method: 'POST',
-          body: JSON.stringify(body),
-        }
-      );
-
-      const data: GuestAuthResponse = await response.json();
-      console.log('Guest auth response:', data);
-
-      if (data.success || (data.accessToken && data.refreshToken)) {
-        // Store tokens securely
-        await SecureStore.setItemAsync('accessToken', data.accessToken);
-        await SecureStore.setItemAsync('refreshToken', data.refreshToken);
-        
-        // Store guest user info
-        if (data.user?.id) {
-          await SecureStore.setItemAsync('userId', data.user.id);
-        }
-
-        console.log('Guest tokens stored ✅');
-
-        // Navigate to onboarding
-        router.replace('/onboarding/questions/CookingExperienceScreen');
-      } else {
-        throw new Error('Guest authentication failed');
-      }
+      // Store selected language preference
+      await SecureStore.setItemAsync('selectedLanguage', selectedLanguage);
+      
+      // Navigate directly to onboarding questions
+      // Guest user creation happens AFTER onboarding → paywall → sign-in screen
+      console.log('🚀 Navigating to onboarding questions');
+      router.replace('/onboarding/questions/CookingExperienceScreen');
     } catch (error: any) {
-      console.error('Guest login error:', error);
+      console.error('Navigation error:', error);
       Alert.alert('Error', error.message || 'Something went wrong');
     } finally {
       setLoading(false);

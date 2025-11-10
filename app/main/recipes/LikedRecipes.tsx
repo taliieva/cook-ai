@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import { useFetchLikedRecipes } from "../dishes/hooks/useFetchLikedRecipes";
 import { useLikeRecipe } from "../dishes/hooks/useLikeRecipes";
+import { LikedRecipeCard } from "./components/LikedRecipeCard";
 
 const { width } = Dimensions.get("window");
 
@@ -120,140 +121,60 @@ export default function LikedComponent({ userPlan = "free", onUpgrade, standalon
     }
   };
 
+  const handleViewRecipe = (recipe: any) => {
+    // Use the full API data that now includes steps and videoURL
+    const fullRecipe = recipe.apiRecipe || apiRecipes.find(r => r.id === recipe.id);
+    
+    // Construct complete dish data object
+    const dishData = {
+      id: recipe.id,
+      name: recipe.name,
+      culture: recipe.cuisine,
+      country: recipe.cuisine,
+      dishType: fullRecipe?.dishType || "Main Course",
+      prepTime: fullRecipe?.prepTime || recipe.cookTime,
+      calories: fullRecipe?.calories || 400,
+      outdoorCost: fullRecipe?.outdoorCost || 15,
+      homeCost: fullRecipe?.homeCost || 6,
+      moneySaved: (fullRecipe?.outdoorCost || 15) - (fullRecipe?.homeCost || 6),
+      image: fullRecipe?.pictureUrl || "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b",
+      isLiked: true,
+      isSaved: false,
+      shortDescription: fullRecipe?.shortDescription || recipe.description,
+      steps: fullRecipe?.steps || [],
+      videoURL: fullRecipe?.videoURL || ""
+    };
+
+    console.log("📱 Navigating to dish detail with full data:", {
+      hasSteps: dishData.steps.length > 0,
+      hasVideo: !!dishData.videoURL,
+      stepsCount: dishData.steps.length
+    });
+
+    router.push({
+      pathname: `/main/dishes/${recipe.id}` as any,
+      params: {
+        dishData: JSON.stringify(dishData),
+        searchedIngredients: JSON.stringify(recipe.ingredients || []),
+        searchId: recipe.searchId || "",
+      },
+    });
+  };
+
+  const handleCookAgain = (recipe: any) => {
+    // Implement cook again functionality
+    console.log("Cook again:", recipe.name);
+  };
+
   const renderRecipeCard = (recipe: any) => (
-    <View key={recipe.id} style={[styles.recipeCard, { 
-      backgroundColor: theme.colors.background.secondary,
-      borderColor: theme.colors.border
-    }]}>
-      {/* Recipe Header */}
-      <View style={styles.recipeHeader}>
-        <View style={styles.recipeImageContainer}>
-          <Text style={styles.recipeEmoji}>{recipe.image}</Text>
-        </View>
-        
-        <View style={styles.recipeInfo}>
-          <Text style={[styles.recipeName, { color: theme.colors.text.primary }]}>
-            {recipe.name}
-          </Text>
-          <Text style={[styles.cuisineText, { color: theme.colors.text.secondary }]}>
-            {recipe.cuisine} • {recipe.cookTime}
-          </Text>
-          <View style={styles.metaRow}>
-            <View style={[styles.difficultyBadge, { backgroundColor: getDifficultyColor(recipe.difficulty) + '20' }]}>
-              <Text style={[styles.difficultyText, { color: getDifficultyColor(recipe.difficulty) }]}>
-                {recipe.difficulty}
-              </Text>
-            </View>
-            <Text style={[styles.ratingText, { color: theme.colors.text.secondary }]}>
-              ⭐ {recipe.rating}
-            </Text>
-          </View>
-        </View>
-
-        <TouchableOpacity
-          style={styles.removeButton}
-          onPress={() => handleRemoveFromLiked(recipe)}
-        >
-          <Ionicons
-            name="heart"
-            size={20}
-            color="#FF6B6B"
-          />
-        </TouchableOpacity>
-      </View>
-
-      {/* Recipe Description */}
-      <Text style={[styles.recipeDescription, { color: theme.colors.text.secondary }]}>
-        {recipe.description}
-      </Text>
-
-      {/* Ingredients */}
-      <View style={styles.ingredientsContainer}>
-        <Text style={[styles.ingredientsLabel, { color: theme.colors.text.primary }]}>
-          Ingredients:
-        </Text>
-        <View style={styles.ingredientsList}>
-          {recipe.ingredients.slice(0, 4).map((ingredient: string, index: number) => (
-            <View key={index} style={[styles.ingredientTag, { 
-              backgroundColor: theme.colors.accent.primary + "15",
-              borderColor: theme.colors.accent.primary + "30"
-            }]}>
-              <Text style={[styles.ingredientText, { color: theme.colors.accent.primary }]}>
-                {ingredient}
-              </Text>
-            </View>
-          ))}
-          {recipe.ingredients.length > 4 && (
-            <View style={[styles.ingredientTag, { 
-              backgroundColor: theme.colors.text.secondary + "15"
-            }]}>
-              <Text style={[styles.ingredientText, { color: theme.colors.text.secondary }]}>
-                +{recipe.ingredients.length - 4} more
-              </Text>
-            </View>
-          )}
-        </View>
-      </View>
-
-      {/* Action Buttons */}
-      <View style={styles.actionButtons}>
-        <TouchableOpacity 
-          style={[styles.viewButton, { backgroundColor: theme.colors.accent.primary }]}
-          onPress={() => {
-            // Use the full API data that now includes steps and videoURL
-            const fullRecipe = recipe.apiRecipe || apiRecipes.find(r => r.id === recipe.id);
-            
-            // Construct complete dish data object
-            const dishData = {
-              id: recipe.id,
-              name: recipe.name,
-              culture: recipe.cuisine,
-              country: recipe.cuisine,
-              dishType: fullRecipe?.dishType || "Main Course",
-              prepTime: fullRecipe?.prepTime || recipe.cookTime,
-              calories: fullRecipe?.calories || 400,
-              outdoorCost: fullRecipe?.outdoorCost || 15,
-              homeCost: fullRecipe?.homeCost || 6,
-              moneySaved: (fullRecipe?.outdoorCost || 15) - (fullRecipe?.homeCost || 6),
-              image: fullRecipe?.pictureUrl || "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b",
-              isLiked: true,
-              isSaved: false,
-              shortDescription: fullRecipe?.shortDescription || recipe.description,
-              steps: fullRecipe?.steps || [],           // ✅ Now has real steps from backend
-              videoURL: fullRecipe?.videoURL || ""      // ✅ Now has real video URL from backend
-            };
-
-            console.log("📱 Navigating to dish detail with full data:", {
-              hasSteps: dishData.steps.length > 0,
-              hasVideo: !!dishData.videoURL,
-              stepsCount: dishData.steps.length
-            });
-
-            router.push({
-              pathname: `/main/dishes/${recipe.id}` as any,
-              params: {
-                dishData: JSON.stringify(dishData),
-                searchedIngredients: JSON.stringify(recipe.ingredients || []),
-                searchId: recipe.searchId || "",
-              },
-            });
-          }}
-        >
-          <Text style={styles.viewButtonText}>View Recipe</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.cookButton, { 
-          backgroundColor: theme.colors.background.primary,
-          borderColor: theme.colors.accent.primary
-        }]}>
-          <Text style={[styles.cookButtonText, { color: theme.colors.accent.primary }]}>Cook Again</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Date Added */}
-      <Text style={[styles.dateAdded, { color: theme.colors.text.secondary }]}>
-        Saved on {new Date(recipe.dateAdded).toLocaleDateString()}
-      </Text>
-    </View>
+    <LikedRecipeCard
+      key={recipe.id}
+      recipe={recipe}
+      theme={theme}
+      onViewRecipe={handleViewRecipe}
+      onCookAgain={handleCookAgain}
+      onRemove={handleRemoveFromLiked}
+    />
   );
 
   const renderUpgradePrompt = () => (

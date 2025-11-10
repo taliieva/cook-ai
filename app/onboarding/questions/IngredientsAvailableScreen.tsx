@@ -3,6 +3,7 @@ import { QuestionContainer } from '@/components/onboarding/QuestionContainer';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { ScrollView } from 'react-native';
+import { setOnboardingCompleted } from '@/utils/onboarding';
 
 export default function IngredientsAvailableScreen() {
   const [selectedIngredients, setSelectedIngredients] = useState([]);
@@ -55,9 +56,21 @@ export default function IngredientsAvailableScreen() {
     );
   };
 
-  const handleNext = () => {
-    // Complete onboarding - navigate to main app
-    router.push('/main/home');
+  const handleNext = async () => {
+    try {
+      console.log('✅ Onboarding completed - storing flag');
+      
+      // Mark onboarding as completed (prevents showing again)
+      await setOnboardingCompleted();
+      
+      // Navigate to Paywall (Superwall) screen
+      console.log('🚀 Navigating to Paywall screen');
+      router.replace('/paywall');
+    } catch (error) {
+      console.error('Error completing onboarding:', error);
+      // Still navigate even on error
+      router.replace('/paywall');
+    }
   };
 
   return (

@@ -6,7 +6,6 @@ import {
     ActivityIndicator,
     Alert,
     Dimensions,
-    Image,
     SafeAreaView,
     ScrollView,
     StatusBar,
@@ -18,30 +17,9 @@ import {
 } from "react-native";
 import { useFetchSavedRecipes } from "../dishes/hooks/useFetchSavedRecipes";
 import { useSaveRecipe } from "../dishes/hooks/useSaveRecipe";
+import { SavedRecipeCard } from "./components/SavedRecipeCard";
 
 const { width, height } = Dimensions.get("window");
-
-// Country color mapping
-const countryColors = {
-  Italian: "#009246",
-  Thai: "#ED1C24", 
-  Indian: "#FF9933",
-  Greek: "#0D5EAF",
-  Mexican: "#006847",
-  Japanese: "#BC002D",
-  American: "#B22234",
-  Turkish: "#DC143C",
-  French: "#0055A4",
-};
-
-const getDifficultyColor = (difficulty: string) => {
-  switch (difficulty) {
-    case "Easy": return "#4CAF50";
-    case "Medium": return "#FF9800";
-    case "Hard": return "#F44336";
-    default: return "#9E9E9E";
-  }
-};
 
 export default function SavedRecipesScreen() {
   const router = useRouter();
@@ -151,171 +129,15 @@ export default function SavedRecipesScreen() {
     }
   });
 
-  const truncateName = (name: string, maxLength: number = 16) => {
-    return name.length > maxLength ? name.substring(0, maxLength) + "..." : name;
-  };
-
-  const getCountryBackgroundColor = (culture: string) => {
-    return countryColors[culture] || "#95A5A6";
-  };
-
-  const formatSavedDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 1) return "Today";
-    if (diffDays === 2) return "Yesterday";
-    if (diffDays <= 7) return `${diffDays - 1} days ago`;
-    return date.toLocaleDateString();
-  };
-
   const renderRecipeCard = (recipe: any) => {
     return (
-      <TouchableOpacity
+      <SavedRecipeCard
         key={recipe.id}
-        style={[
-          styles.recipeCard,
-          {
-            backgroundColor: theme.colors.background.secondary,
-            borderColor: theme.colors.border,
-          },
-        ]}
-        onPress={() => handleRecipePress(recipe)}
-        activeOpacity={0.95}
-      >
-        {/* Image Section */}
-        <View style={styles.imageSection}>
-          <Image
-            source={{ uri: recipe.image }}
-            style={styles.recipeImage}
-            resizeMode="cover"
-          />
-          
-          {/* Rating Badge */}
-          <View style={styles.ratingBadge}>
-            <Ionicons name="star" size={12} color="#FFD700" />
-            <Text style={styles.ratingText}>{recipe.rating}</Text>
-          </View>
-        </View>
-
-        {/* Content Section */}
-        <View style={styles.contentSection}>
-          {/* Recipe name and unsave button */}
-          <View style={styles.headerRow}>
-            <Text
-              style={[styles.recipeName, { color: theme.colors.text.primary }]}
-            >
-              {truncateName(recipe.name)}
-            </Text>
-            <TouchableOpacity
-              style={styles.unsaveButton}
-              onPress={() => handleUnsaveRecipe(recipe)}
-            >
-              <Ionicons
-                name="bookmark"
-                size={18}
-                color={theme.colors.accent.primary}
-              />
-            </TouchableOpacity>
-          </View>
-
-          {/* Calories and Cost */}
-          <View style={styles.calorieRow}>
-            <View style={styles.calorieChip}>
-              <Ionicons
-                name="flame"
-                size={10}
-                color={theme.colors.accent.primary}
-              />
-              <Text
-                style={[
-                  styles.calorieText,
-                  { color: theme.colors.accent.primary },
-                ]}
-              >
-                {recipe.calories} cal
-              </Text>
-            </View>
-            
-            <View style={styles.costContainer}>
-              <View style={styles.outdoorCost}>
-                <Ionicons
-                  name="storefront-outline"
-                  size={8}
-                  color="#FF6B6B"
-                />
-                <Text style={styles.outdoorCostText}>
-                  ${recipe.outdoorCost}
-                </Text>
-              </View>
-              <View style={styles.costSeparator} />
-              <View style={styles.homeCost}>
-                <Ionicons
-                  name="home-outline"
-                  size={8}
-                  color="#4ECDC4"
-                />
-                <Text style={styles.homeCostText}>
-                  ${recipe.homeCost}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Metadata */}
-          <View style={styles.metadataRow}>
-            <View style={styles.metadataContainer}>
-              <View
-                style={[
-                  styles.cultureChip,
-                  { backgroundColor: getCountryBackgroundColor(recipe.culture) },
-                ]}
-              >
-                <Text style={styles.cultureText}>
-                  {recipe.culture}
-                </Text>
-              </View>
-              <Text
-                style={[
-                  styles.metadataText,
-                  { color: theme.colors.text.secondary },
-                ]}
-              >
-                • {recipe.dishType} • {recipe.prepTime}
-              </Text>
-            </View>
-          </View>
-
-          {/* Bottom row - Difficulty and saved date */}
-          <View style={styles.bottomRow}>
-            <View
-              style={[
-                styles.difficultyBadge,
-                { backgroundColor: getDifficultyColor(recipe.difficulty) + "20" },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.difficultyText,
-                  { color: getDifficultyColor(recipe.difficulty) },
-                ]}
-              >
-                {recipe.difficulty}
-              </Text>
-            </View>
-            <Text
-              style={[
-                styles.savedDateText,
-                { color: theme.colors.text.secondary },
-              ]}
-            >
-              Saved {formatSavedDate(recipe.savedDate)}
-            </Text>
-          </View>
-        </View>
-      </TouchableOpacity>
+        recipe={recipe}
+        theme={theme}
+        onPress={handleRecipePress}
+        onUnsave={handleUnsaveRecipe}
+      />
     );
   };
 

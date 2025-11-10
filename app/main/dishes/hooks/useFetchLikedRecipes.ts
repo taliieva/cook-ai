@@ -1,4 +1,5 @@
 import { getToken } from "@/services/api/auth";
+import { ENV } from "@/config/env";
 import { useEffect, useState } from "react";
 
 interface LikedRecipe {
@@ -46,7 +47,7 @@ export const useFetchLikedRecipes = (
       if (!token) throw new Error("User not authenticated");
 
       const response = await fetch(
-        `https://cook-ai-backend-production.up.railway.app/v1/recipes/liked?limit=${limit}&offset=${offset}`,
+        `${ENV.API_URL}/recipes/liked?limit=${limit}&offset=${offset}`,
         {
           method: "GET",
           headers: {

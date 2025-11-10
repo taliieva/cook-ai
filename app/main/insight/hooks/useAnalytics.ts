@@ -1,4 +1,5 @@
 import { fetchWithAuth } from "@/utils/auth";
+import { ENV } from "@/config/env";
 import { useEffect, useState } from "react";
 
 export interface AnalyticsStats {
@@ -59,7 +60,7 @@ export const useAnalytics = (period: string = "week") => {
         setError(null);
 
         try {
-            const url = `https://cook-ai-backend-production.up.railway.app/v1/analytics/dashboard?period=${period}`;
+            const url = `${ENV.API_URL}/analytics/dashboard?period=${period}`;
 
             // ✅ Log the request
             console.log("📊 Fetching analytics:", url);

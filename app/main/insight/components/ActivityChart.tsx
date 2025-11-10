@@ -77,7 +77,11 @@ export const ActivityChart: React.FC<Props> = ({ data, period }) => {
         );
     }
 
+    // Calculate max value, ensuring it's at least 1 to avoid division by zero
     const maxValue = Math.max(...activityData.map((item) => item.value), 1);
+    
+    // Check if all values are 0 (no activity)
+    const hasNoActivity = activityData.every((item) => item.value === 0);
 
     return (
         <View style={activityChartStyles.chartContainer}>
@@ -99,15 +103,24 @@ export const ActivityChart: React.FC<Props> = ({ data, period }) => {
                 <Text style={[activityChartStyles.chartTitle, { color: theme.colors.text.primary }]}>
                     {getChartTitle()}
                 </Text>
-                <View style={activityChartStyles.chartContent}>
-                    {activityData.map((item, index) => {
-                        const barHeight = (item.value / maxValue) * 100;
-                        return (
+                
+                {hasNoActivity ? (
+                    // Show placeholder bars when no activity
+                    <View style={activityChartStyles.chartContent}>
+                        {activityData.map((item, index) => (
                             <View key={index} style={activityChartStyles.chartBar}>
                                 <View style={activityChartStyles.barContainer}>
-                                    <LinearGradient
-                                        colors={["#007AFF", "#0051D5"]}
-                                        style={[activityChartStyles.bar, { height: `${barHeight}%` }]}
+                                    <View
+                                        style={[
+                                            activityChartStyles.bar,
+                                            activityChartStyles.emptyBar,
+                                            { 
+                                                height: '5%',
+                                                backgroundColor: theme.isDark 
+                                                    ? 'rgba(255, 255, 255, 0.1)' 
+                                                    : 'rgba(0, 0, 0, 0.1)',
+                                            }
+                                        ]}
                                     />
                                 </View>
                                 <Text
@@ -116,14 +129,47 @@ export const ActivityChart: React.FC<Props> = ({ data, period }) => {
                                     {item.dayName}
                                 </Text>
                                 <Text
-                                    style={[activityChartStyles.chartValue, { color: theme.colors.text.primary }]}
+                                    style={[activityChartStyles.chartValue, { color: theme.colors.text.tertiary }]}
                                 >
-                                    {item.value}
+                                    0
                                 </Text>
                             </View>
-                        );
-                    })}
-                </View>
+                        ))}
+                    </View>
+                ) : (
+                    // Show actual bars with data
+                    <View style={activityChartStyles.chartContent}>
+                        {activityData.map((item, index) => {
+                            // Calculate bar height as percentage, ensuring minimum 5% for visibility
+                            const calculatedHeight = (item.value / maxValue) * 100;
+                            const barHeight = Math.max(calculatedHeight, item.value > 0 ? 5 : 0);
+                            
+                            return (
+                                <View key={index} style={activityChartStyles.chartBar}>
+                                    <View style={activityChartStyles.barContainer}>
+                                        <LinearGradient
+                                            colors={item.value > 0 ? ["#007AFF", "#0051D5"] : ["transparent", "transparent"]}
+                                            style={[
+                                                activityChartStyles.bar, 
+                                                { height: `${barHeight}%` }
+                                            ]}
+                                        />
+                                    </View>
+                                    <Text
+                                        style={[activityChartStyles.chartDay, { color: theme.colors.text.secondary }]}
+                                    >
+                                        {item.dayName}
+                                    </Text>
+                                    <Text
+                                        style={[activityChartStyles.chartValue, { color: theme.colors.text.primary }]}
+                                    >
+                                        {item.value}
+                                    </Text>
+                                </View>
+                            );
+                        })}
+                    </View>
+                )}
             </LinearGradient>
         </View>
     );

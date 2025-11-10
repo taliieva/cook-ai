@@ -1,8 +1,10 @@
 import { useTheme } from "@/hooks/useTheme";
+import { validateAuthState } from "@/utils/auth";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
-  Dimensions,
+  ActivityIndicator,
   Image,
   SafeAreaView,
   StatusBar,
@@ -14,50 +16,13 @@ import {
 import InsightsScreen from "./insight";
 import LikedComponent from "./recipes/LikedRecipes";
 import AIPoweredComponent from "./search/AIPoweredComponent";
+import { countries, modes } from "./search/constants/searchConstants";
 
 // Import your PNG icon
 const siriLogo = require("../../assets/images/ai-logo.png");
 
 // TODO: Import and initialize Superwall when ready
 // import Superwall from '@superwall/react-native';
-
-
-const { width, height } = Dimensions.get("window");
-
-// Mock countries data
-const countries = [
-  { name: "All Countries", flag: "🌍", code: "all" },
-  { name: "Azərbaycan", flag: "🇦🇿", code: "az" },
-  { name: "Türkiye", flag: "🇹🇷", code: "tr" },
-  { name: "Italian", flag: "🇮🇹", code: "it" },
-  { name: "Chinese", flag: "🇨🇳", code: "cn" },
-  { name: "Mexican", flag: "🇲🇽", code: "mx" },
-  { name: "Japanese", flag: "🇯🇵", code: "jp" },
-  { name: "French", flag: "🇫🇷", code: "fr" },
-  { name: "Indian", flag: "🇮🇳", code: "in" },
-  { name: "American", flag: "🇺🇸", code: "us" },
-  { name: "Thai", flag: "🇹🇭", code: "th" },
-
-];
-
-// Modes data
-const modes = [
-  {
-    name: "Standard",
-    icon: "restaurant-outline",
-    code: "standard",
-    isPro: false,
-  },
-  { name: "Gym", icon: "fitness-outline", code: "gym", isPro: false },
-  { name: "Diet", icon: "leaf-outline", code: "diet", isPro: false },
-  { name: "Vegan", icon: "flower-outline", code: "vegan", isPro: true },
-  {
-    name: "Vegetarian",
-    icon: "nutrition-outline",
-    code: "vegetarian",
-    isPro: true,
-  },
-];
 
 // Tab configuration - simplified approach
 const tabs = [
@@ -92,6 +57,11 @@ const tabs = [
 
 export default function UnifiedMainScreen() {
   const theme = useTheme();
+  const router = useRouter();
+
+  // Auth state
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Main app state
   const [activeTab, setActiveTab] = useState("ai");
@@ -101,6 +71,41 @@ export default function UnifiedMainScreen() {
   const [selectedCountry, setSelectedCountry] = useState(countries[0]);
   const [selectedMode, setSelectedMode] = useState(modes[0]);
   const [userPlan, setUserPlan] = useState("free");
+
+  // Check authentication on mount
+  useEffect(() => {
+    checkAuthentication();
+  }, []);
+
+  const checkAuthentication = async () => {
+    try {
+      console.log("🔐 Home: Checking authentication...");
+      const authResult = await validateAuthState();
+      
+      // Allow both authenticated users AND guest users
+      const hasAccess = authResult.isValid && authResult.userData;
+      
+      if (!hasAccess) {
+        console.log("⛔ Home: No valid tokens - redirecting to welcome");
+        router.replace("/onboarding/welcome");
+        return;
+      }
+      
+      const isGuest = authResult.userData?.isGuest;
+      console.log(`✅ Home: User has access (${isGuest ? 'Guest' : 'Authenticated'})`);
+      setIsAuthenticated(true);
+      
+      // Update user plan if available
+      if (authResult.userData?.subscriptionStatus) {
+        setUserPlan(authResult.userData.subscriptionStatus);
+      }
+    } catch (error) {
+      console.error("❌ Home: Auth check error:", error);
+      router.replace("/onboarding/welcome");
+    } finally {
+      setIsAuthChecking(false);
+    }
+  };
 
   // Handle tab switching
   const handleTabPress = (tabId: string) => {
@@ -170,37 +175,50 @@ export default function UnifiedMainScreen() {
     }
   };
 
-  // Render current section based on active tab
+  // Show loading while checking authentication
+  if (isAuthChecking) {
+    return (
+      <SafeAreaView
+        style={[
+          styles.container,
+          { backgroundColor: theme.colors.background.primary },
+        ]}
+      >
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Don't render protected content if not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  // Render current section based on active tab (content only, no modals)
   const renderCurrentSection = () => {
+    const aiComponent = (
+      <AIPoweredComponent
+        ingredients={ingredients}
+        setIngredients={setIngredients}
+        selectedCountry={selectedCountry}
+        setSelectedCountry={setSelectedCountry}
+        selectedMode={selectedMode}
+        setSelectedMode={setSelectedMode}
+        onUpgrade={handleUpgrade}
+      />
+    );
+
     switch (activeTab) {
       case "ai":
-        return (
-          <AIPoweredComponent
-            ingredients={ingredients}
-            setIngredients={setIngredients}
-            selectedCountry={selectedCountry}
-            setSelectedCountry={setSelectedCountry}
-            selectedMode={selectedMode}
-            setSelectedMode={setSelectedMode}
-            onUpgrade={handleUpgrade}
-          />
-        );
+        return aiComponent;
       case "insights":
         return <InsightsScreen />;
       case "liked":
         return <LikedComponent userPlan={userPlan} onUpgrade={handleUpgrade} />;
       default:
-        return (
-          <AIPoweredComponent
-            ingredients={ingredients}
-            setIngredients={setIngredients}
-            selectedCountry={selectedCountry}
-            setSelectedCountry={setSelectedCountry}
-            selectedMode={selectedMode}
-            setSelectedMode={setSelectedMode}
-            onUpgrade={handleUpgrade}
-          />
-        );
+        return aiComponent;
     }
   };
 
@@ -283,6 +301,11 @@ export default function UnifiedMainScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   contentContainer: {
     flex: 1,

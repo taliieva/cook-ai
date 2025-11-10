@@ -2,7 +2,8 @@ export default {
   expo: {
     name: "react-native-demo-app",
     slug: "react-native-demo-app",
-    version: "1.0.0",
+    owner: "umidtest123321",
+    version: process.env.EXPO_PUBLIC_APP_VERSION || "1.0.0",
     orientation: "portrait",
     icon: "./assets/images/icon.png",
     scheme: "reactnativedemoapp",
@@ -11,11 +12,11 @@ export default {
 
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.thecookai.app", // ✅ WILL SHOW CORRECTLY NOW
+      bundleIdentifier: "com.thecookai.app",
     },
 
     android: {
-      package: "com.thecookai.app", // ✅ WILL SHOW CORRECTLY NOW
+      package: "com.thecookai.app",
       edgeToEdgeEnabled: true,
       adaptiveIcon: {
         foregroundImage: "./assets/images/adaptive-icon.png",

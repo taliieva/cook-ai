@@ -1,6 +1,7 @@
 // app/auth/sign-in.tsx
 import { Logo } from "@/components/common/Logo";
 import { Button } from "@/components/ui/Button";
+import { ENV } from "@/config/env";
 import { useTheme } from "@/hooks/useTheme";
 import { Ionicons } from "@expo/vector-icons";
 import * as AppleAuthentication from "expo-apple-authentication";
@@ -57,12 +58,27 @@ export default function SignInScreen() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
 
-  // Google Auth configuration
+  // Google Auth configuration with environment variables
+  const discovery = {
+    authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
+    tokenEndpoint: 'https://oauth2.googleapis.com/token',
+    revocationEndpoint: 'https://oauth2.googleapis.com/revoke',
+  };
+  
   const [request, response, promptAsync] = Google.useAuthRequest({
-    androidClientId: "YOUR_ANDROID_CLIENT_ID",
-    iosClientId: "YOUR_IOS_CLIENT_ID",
-    webClientId: "YOUR_WEB_CLIENT_ID",
+    androidClientId: ENV.GOOGLE_ANDROID_CLIENT_ID,
+    iosClientId: ENV.GOOGLE_IOS_CLIENT_ID,
+    webClientId: ENV.GOOGLE_WEB_CLIENT_ID,
+    selectAccount: true,
   });
+
+  // Debug log to verify correct client IDs are being used
+  React.useEffect(() => {
+    console.log('🔐 Google OAuth Configuration:');
+    console.log('Android Client ID:', ENV.GOOGLE_ANDROID_CLIENT_ID);
+    console.log('iOS Client ID:', ENV.GOOGLE_IOS_CLIENT_ID);
+    console.log('Web Client ID:', ENV.GOOGLE_WEB_CLIENT_ID);
+  }, []);
 
   React.useEffect(() => {
     if (response?.type === "success") {
@@ -104,6 +120,8 @@ export default function SignInScreen() {
     try {
       setAppleLoading(true);
 
+      // Note: Apple Sign In uses app bundle ID for authentication
+      // Client ID (ENV.APPLE_CLIENT_ID) is only needed on the backend for token verification
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
           AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
@@ -231,7 +249,7 @@ export default function SignInScreen() {
       userData: UserData
   ) => {
     try {
-      const endpoint = `https://cook-ai-backend-production.up.railway.app/v1/auth/convert/${provider}`;
+      const endpoint = `${ENV.API_URL}/auth/convert/${provider}`;
 
       const requestBody = {
         token,
@@ -322,9 +340,65 @@ export default function SignInScreen() {
     router.back();
   };
 
-  const handleGuestContinue = () => {
-    // Navigate back to welcome screen for guest login
-    router.back();
+  const handleGuestContinue = async () => {
+    try {
+      setLoading(true);
+      console.log('👤 Continue as Guest clicked');
+
+      // Generate or retrieve deviceId
+      let deviceId = await SecureStore.getItemAsync('deviceId');
+      if (!deviceId) {
+        const Crypto = require('expo-crypto');
+        deviceId = Crypto.randomUUID() as string;
+        await SecureStore.setItemAsync('deviceId', deviceId);
+        console.log('New deviceId generated:', deviceId);
+      } else {
+        console.log('Existing deviceId found:', deviceId);
+      }
+
+      const body = {
+        deviceId: deviceId as string,
+        platform: Platform.OS,
+        appVersion: '1.0.0',
+        locale: 'en-US',
+      };
+
+      console.log("Sending guest auth request:", body);
+
+      const response = await fetchWithAuth(
+        `${ENV.API_URL}/auth/guest`,
+        {
+          method: 'POST',
+          body: JSON.stringify(body),
+        }
+      );
+
+      const data = await response.json();
+      console.log('Guest auth response:', data);
+
+      if (data.success || (data.accessToken && data.refreshToken)) {
+        // Store tokens securely
+        await SecureStore.setItemAsync('accessToken', data.accessToken);
+        await SecureStore.setItemAsync('refreshToken', data.refreshToken);
+        
+        // Store guest user info
+        if (data.user?.id) {
+          await SecureStore.setItemAsync('userId', data.user.id);
+        }
+
+        console.log('✅ Guest tokens stored - navigating to home');
+
+        // Navigate to main app as guest
+        router.replace('/main/home');
+      } else {
+        throw new Error('Guest authentication failed');
+      }
+    } catch (error: any) {
+      console.error('Guest continue error:', error);
+      Alert.alert('Error', error.message || 'Failed to continue as guest. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -421,10 +495,11 @@ export default function SignInScreen() {
 
           {/* Guest Continue Button */}
           <Button
-              title="Continue as Guest"
+              title={loading ? "Loading..." : "Continue as Guest"}
               onPress={handleGuestContinue}
               style={styles.guestButton}
               variant="outline"
+              disabled={loading || googleLoading || appleLoading}
           />
 
           {/* Info Text */}

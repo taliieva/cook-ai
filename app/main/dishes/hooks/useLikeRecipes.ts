@@ -1,5 +1,6 @@
 // hooks/useLikeRecipe.ts
 import { getToken } from "@/services/api/auth";
+import { ENV } from "@/config/env";
 import { useState } from "react";
 
 interface LikeRecipeResponse {
@@ -33,7 +34,7 @@ export const useLikeRecipe = () => {
     
 
       const response = await fetch(
-        "https://cook-ai-backend-production.up.railway.app/v1/recipes/like",
+        `${ENV.API_URL}/recipes/like`,
         {
           method: "POST",
           headers: { 

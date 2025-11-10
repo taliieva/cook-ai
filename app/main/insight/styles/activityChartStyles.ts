@@ -40,6 +40,9 @@ export const activityChartStyles = StyleSheet.create({
         borderRadius: 10,
         minHeight: 4,
     },
+    emptyBar: {
+        opacity: 0.3,
+    },
     chartDay: {
         fontSize: 12,
         marginBottom: 4,

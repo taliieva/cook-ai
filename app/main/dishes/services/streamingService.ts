@@ -2,10 +2,19 @@
  * Streaming Service for Progressive Dish Loading
  * 
  * Handles real-time dish data updates using React Native's DeviceEventEmitter.
- * Supports both true streaming (when backend implements it) and
- * fallback progressive loading for immediate UX improvement.
+ * 
+ * CURRENT IMPLEMENTATION: Progressive Reveal Pattern
+ * - Fetches all dish data at once from backend (single API call)
+ * - Emits dishes one-by-one with 400ms delay for smooth UX
+ * - Includes haptic feedback on each dish arrival
+ * - This provides excellent perceived performance without backend streaming support
+ * 
+ * FUTURE: Can be upgraded to true WebSocket/SSE streaming when backend supports it
+ * by replacing the fetch() call with a streaming client. The event-based architecture
+ * is already in place and would work seamlessly with real streaming.
  */
 
+import { ENV } from '@/config/env';
 import { fetchWithAuth } from '@/utils/auth';
 import * as Haptics from 'expo-haptics';
 import * as SecureStore from 'expo-secure-store';
@@ -36,6 +45,8 @@ export interface StreamEvent {
   dishIndex?: number;
   data?: Partial<DishData>;
   error?: string;
+  errorType?: string;
+  status?: number;
   totalDishes?: number;
 }
 
@@ -103,15 +114,34 @@ class DishStreamingService {
       console.log('📡 Fetching dishes...');
 
       const response = await fetchWithAuth(
-        'https://cook-ai-backend-production.up.railway.app/v1/recipes',
+        `${ENV.API_URL}/recipes`,
         {
           method: 'POST',
           body: JSON.stringify(requestBody),
         }
       );
 
+      // Handle error responses with proper error messages
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        let errorType = 'NETWORK_ERROR';
+        
+        try {
+          const errorData = await response.json();
+          
+          // Check for limit-related errors (403 Forbidden)
+          if (response.status === 403) {
+            errorMessage = errorData.message || errorData.error || 'Access denied';
+            errorType = 'LIMIT_EXCEEDED';
+          } else {
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          }
+        } catch (e) {
+          // If can't parse error JSON, use status code message
+          console.log('Could not parse error response');
+        }
+
+        throw { message: errorMessage, type: errorType, status: response.status };
       }
 
       const data = await response.json();
@@ -178,6 +208,8 @@ class DishStreamingService {
       this.emit('stream_error', {
         searchId,
         error: error.message || 'Failed to load dishes',
+        errorType: error.type || 'UNKNOWN_ERROR',
+        status: error.status,
       });
     } finally {
       this.activeSearches.delete(searchId);
