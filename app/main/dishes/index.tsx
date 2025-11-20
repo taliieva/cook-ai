@@ -178,15 +178,11 @@ export default function DishesScreen() {
             {
               text: 'Upgrade Now',
               style: 'default',
-              onPress: () => {
-                console.log('🔓 Opening Superwall paywall from search limit');
+              onPress: async () => {
+                console.log('🔓 Opening RevenueCat paywall from search limit');
                 router.back();
-                // TODO: Trigger Superwall paywall
-                // Superwall.register('search_limit_reached', {
-                //   source: 'recipe_search',
-                //   feature: 'searches',
-                //   limit_type: 'monthly'
-                // });
+                const { showPaywall } = await import('@/utils/subscriptions');
+                await showPaywall();
               },
             },
           ]
@@ -393,7 +389,7 @@ export default function DishesScreen() {
       const errorMessage = err.message || "Failed to like recipe";
       
       if (errorMessage.includes("Free users can only like")) {
-        // Premium upgrade prompt - Show Superwall paywall
+        // Premium upgrade prompt - Show RevenueCat paywall
         Alert.alert(
           "Upgrade to Premium",
           "You've reached your free plan limit. Upgrade to Premium to like unlimited recipes!",
@@ -401,13 +397,10 @@ export default function DishesScreen() {
             { text: "Not Now", style: "cancel" },
             { 
               text: "Upgrade", 
-              onPress: () => {
-                console.log("🔓 Opening Superwall paywall from like limit");
-                // TODO: Implement Superwall paywall display
-                // Superwall.register('like_limit_reached', {
-                //   source: 'recipe_like',
-                //   feature: 'likes'
-                // });
+              onPress: async () => {
+                console.log("🔓 Opening RevenueCat paywall from like limit");
+                const { showPaywall } = await import('@/utils/subscriptions');
+                await showPaywall();
               },
               style: "default"
             }
@@ -465,7 +458,7 @@ export default function DishesScreen() {
       const errorMessage = err.message || "Failed to save recipe";
       
       if (errorMessage.includes("Free users can only save") || errorMessage.includes("Upgrade to premium")) {
-        // Premium upgrade prompt - Show Superwall paywall
+        // Premium upgrade prompt - Show RevenueCat paywall
         Alert.alert(
           "Upgrade to Premium",
           "You've reached your free plan limit. Upgrade to Premium to save unlimited recipes!",
@@ -473,13 +466,10 @@ export default function DishesScreen() {
             { text: "Not Now", style: "cancel" },
             { 
               text: "Upgrade", 
-              onPress: () => {
-                console.log("🔓 Opening Superwall paywall from save limit");
-                // TODO: Implement Superwall paywall display
-                // Superwall.register('save_limit_reached', {
-                //   source: 'recipe_save',
-                //   feature: 'saves'
-                // });
+              onPress: async () => {
+                console.log("🔓 Opening RevenueCat paywall from save limit");
+                const { showPaywall } = await import('@/utils/subscriptions');
+                await showPaywall();
               },
               style: "default"
             }

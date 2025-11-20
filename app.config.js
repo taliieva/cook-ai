@@ -10,9 +10,19 @@ export default {
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
 
+    // EAS Project Configuration
+    extra: {
+      eas: {
+        projectId: "6fe0b2c6-fd1c-43d1-a8e1-c834d6cc4d5f",
+      },
+    },
+
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.thecookai.app",
+      config: {
+        usesNonExemptEncryption: false,
+      },
     },
 
     android: {
@@ -44,6 +54,17 @@ export default {
       ],
       "expo-font",
       "expo-secure-store",
+      [
+        "expo-build-properties",
+        {
+          ios: {
+            deploymentTarget: "15.1",
+          },
+          android: {
+            minSdkVersion: 24,
+          },
+        },
+      ],
     ],
 
     experiments: {

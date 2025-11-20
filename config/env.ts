@@ -23,6 +23,9 @@ export const ENV = {
   GOOGLE_AUTH_BASE_URL: process.env.EXPO_PUBLIC_GOOGLE_AUTH_BASE_URL || 'https://accounts.google.com/o/oauth2/v2/auth',
   GOOGLE_TOKEN_URL: process.env.EXPO_PUBLIC_GOOGLE_TOKEN_URL || 'https://oauth2.googleapis.com/token',
   APPLE_AUTH_BASE_URL: process.env.EXPO_PUBLIC_APPLE_AUTH_BASE_URL || 'https://appleid.apple.com/auth/authorize',
+  
+  // RevenueCat Configuration
+  REVENUECAT_API_KEY: process.env.EXPO_PUBLIC_REVENUECAT_KEY || 'test_dHUQiLAWmMSNTWwWmIyuNlyFgkZ',
 } as const;
 
 // Helper to construct full API endpoint URLs
@@ -45,6 +48,11 @@ export const validateEnv = (): boolean => {
   if (missing.length > 0) {
     console.warn(`⚠️  Missing environment variables: ${missing.join(', ')}`);
     return false;
+  }
+  
+  // Warn about subscription API keys
+  if (!ENV.REVENUECAT_API_KEY) {
+    console.warn('⚠️  REVENUECAT_API_KEY is not set - Using default test key');
   }
   
   console.log('✅ All required environment variables are present');

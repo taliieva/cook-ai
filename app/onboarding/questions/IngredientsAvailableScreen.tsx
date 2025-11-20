@@ -63,7 +63,7 @@ export default function IngredientsAvailableScreen() {
       // Mark onboarding as completed (prevents showing again)
       await setOnboardingCompleted();
       
-      // Navigate to Paywall (Superwall) screen
+      // Navigate to Paywall (RevenueCat) screen
       console.log('🚀 Navigating to Paywall screen');
       router.replace('/paywall');
     } catch (error) {

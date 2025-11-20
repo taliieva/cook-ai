@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { validateAuthState, clearAuthTokens } from '@/utils/auth';
 import * as SecureStore from 'expo-secure-store';
 import { useRouter, useSegments } from 'expo-router';
+import { hasActiveSubscription, identifyUser as identifyRevenueCatUser, logOutUser as logOutRevenueCatUser } from '@/utils/subscriptions';
 
 interface User {
   id: string;
@@ -70,13 +71,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const authResult = await validateAuthState();
       
       if (authResult.isValid && authResult.userData) {
+        // Check RevenueCat subscription status
+        let subscriptionStatus: 'free' | 'pro' = 'free';
+        try {
+          const hasActiveSub = await hasActiveSubscription();
+          subscriptionStatus = hasActiveSub ? 'pro' : 'free';
+          console.log('💳 RevenueCat subscription status:', subscriptionStatus);
+        } catch (error) {
+          console.warn('⚠️ Could not check RevenueCat subscription:', error);
+          // Fallback to backend status if RevenueCat fails
+          subscriptionStatus = (authResult.userData.subscriptionStatus === 'pro' ? 'pro' : 'free') as 'free' | 'pro';
+        }
+        
         const userData: User = {
           id: authResult.userData.id,
           email: authResult.userData.email,
           displayName: authResult.userData.displayName || authResult.userData.email || 'User',
           isGuest: authResult.userData.isGuest,
-          subscriptionStatus: (authResult.userData.subscriptionStatus === 'pro' ? 'pro' : 'free') as 'free' | 'pro',
+          subscriptionStatus,
         };
+        
+        // Identify user in RevenueCat
+        if (!userData.isGuest && userData.id) {
+          try {
+            await identifyRevenueCatUser(userData.id);
+            console.log('✅ User identified in RevenueCat:', userData.id);
+          } catch (error) {
+            console.warn('⚠️ Failed to identify user in RevenueCat:', error);
+          }
+        }
         
         setUser(userData);
         
@@ -99,12 +122,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (userData: User) => {
     console.log('✅ AuthContext: Logging in user:', userData.email);
+    
+    // Identify user in RevenueCat
+    if (!userData.isGuest && userData.id) {
+      try {
+        await identifyRevenueCatUser(userData.id);
+        console.log('✅ User identified in RevenueCat:', userData.id);
+      } catch (error) {
+        console.warn('⚠️ Failed to identify user in RevenueCat:', error);
+      }
+    }
+    
     setUser(userData);
   };
 
   const logout = async () => {
     try {
       console.log('🔓 AuthContext: Logging out...');
+      
+      // Log out from RevenueCat
+      try {
+        await logOutRevenueCatUser();
+        console.log('✅ RevenueCat: User logged out');
+      } catch (error) {
+        console.warn('⚠️ Failed to log out from RevenueCat:', error);
+      }
       
       // Clear tokens
       await clearAuthTokens();

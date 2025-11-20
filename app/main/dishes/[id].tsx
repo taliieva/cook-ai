@@ -81,7 +81,7 @@ export default function DishDetailScreen() {
       const errorMessage = err.message || "Failed to like recipe";
       
       if (errorMessage.includes("Free users can only like")) {
-        // Premium upgrade prompt - Show Superwall paywall
+        // Premium upgrade prompt - Show RevenueCat paywall
         Alert.alert(
           "Upgrade to Premium",
           "You've reached your free plan limit. Upgrade to Premium to like unlimited recipes!",
@@ -89,13 +89,10 @@ export default function DishDetailScreen() {
             { text: "Not Now", style: "cancel" },
             { 
               text: "Upgrade", 
-              onPress: () => {
-                console.log("🔓 Opening Superwall paywall from like limit (detail)");
-                // TODO: Implement Superwall paywall display
-                // Superwall.register('like_limit_reached', {
-                //   source: 'recipe_detail_like',
-                //   feature: 'likes'
-                // });
+              onPress: async () => {
+                console.log("🔓 Opening RevenueCat paywall from like limit (detail)");
+                const { showPaywall } = await import('@/utils/subscriptions');
+                await showPaywall();
               },
               style: "default"
             }

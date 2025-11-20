@@ -21,8 +21,7 @@ import { countries, modes } from "./search/constants/searchConstants";
 // Import your PNG icon
 const siriLogo = require("../../assets/images/ai-logo.png");
 
-// TODO: Import and initialize Superwall when ready
-// import Superwall from '@superwall/react-native';
+// RevenueCat is initialized in the root layout
 
 // Tab configuration - simplified approach
 const tabs = [
@@ -51,7 +50,7 @@ const tabs = [
     activeIcon: "diamond",
     label: "Premium",
     type: "icon",
-    isPaywall: true, // Special flag to open Superwall
+    isPaywall: true, // Special flag to open RevenueCat paywall
   },
 ];
 
@@ -109,10 +108,10 @@ export default function UnifiedMainScreen() {
 
   // Handle tab switching
   const handleTabPress = (tabId: string) => {
-    // Check if it's the premium tab - show Superwall instead of switching tabs
+    // Check if it's the premium tab - show RevenueCat paywall instead of switching tabs
     const selectedTab = tabs.find(t => t.id === tabId);
     if (selectedTab?.isPaywall) {
-      console.log("🔓 Opening Superwall paywall from Premium tab");
+      console.log("🔓 Opening RevenueCat paywall from Premium tab");
       handleUpgrade();
       return;
     }
@@ -120,14 +119,11 @@ export default function UnifiedMainScreen() {
     setActiveTab(tabId);
   };
 
-  // Handle upgrade from any component - Show Superwall paywall
-  const handleUpgrade = () => {
-    console.log("🔓 Showing Superwall paywall for upgrade");
-    // TODO: Implement Superwall paywall display
-    // Superwall.register('upgrade_clicked', {
-    //   source: 'app_navigation',
-    //   user_plan: userPlan
-    // });
+  // Handle upgrade from any component - Show RevenueCat paywall
+  const handleUpgrade = async () => {
+    console.log("🔓 Showing RevenueCat paywall for upgrade");
+    const { showPaywall } = await import('@/utils/subscriptions');
+    await showPaywall();
   };
 
   // Handle search again from insights
