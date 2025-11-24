@@ -178,11 +178,10 @@ export default function DishesScreen() {
             {
               text: 'Upgrade Now',
               style: 'default',
-              onPress: async () => {
-                console.log('🔓 Opening RevenueCat paywall from search limit');
+              onPress: () => {
+                console.log('💎 Opening Subscription screen from search limit');
                 router.back();
-                const { showPaywall } = await import('@/utils/subscriptions');
-                await showPaywall();
+                router.push('/main/subscription');
               },
             },
           ]
@@ -397,10 +396,9 @@ export default function DishesScreen() {
             { text: "Not Now", style: "cancel" },
             { 
               text: "Upgrade", 
-              onPress: async () => {
-                console.log("🔓 Opening RevenueCat paywall from like limit");
-                const { showPaywall } = await import('@/utils/subscriptions');
-                await showPaywall();
+              onPress: () => {
+                console.log("💎 Opening Subscription screen from like limit");
+                router.push('/main/subscription');
               },
               style: "default"
             }
@@ -466,10 +464,9 @@ export default function DishesScreen() {
             { text: "Not Now", style: "cancel" },
             { 
               text: "Upgrade", 
-              onPress: async () => {
-                console.log("🔓 Opening RevenueCat paywall from save limit");
-                const { showPaywall } = await import('@/utils/subscriptions');
-                await showPaywall();
+              onPress: () => {
+                console.log("💎 Opening Subscription screen from save limit");
+                router.push('/main/subscription');
               },
               style: "default"
             }

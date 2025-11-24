@@ -50,7 +50,7 @@ const tabs = [
     activeIcon: "diamond",
     label: "Premium",
     type: "icon",
-    isPaywall: true, // Special flag to open RevenueCat paywall
+    isPaywall: true, // Special flag to open subscription screen
   },
 ];
 
@@ -108,22 +108,21 @@ export default function UnifiedMainScreen() {
 
   // Handle tab switching
   const handleTabPress = (tabId: string) => {
-    // Check if it's the premium tab - show RevenueCat paywall instead of switching tabs
+    // Check if it's the premium tab - navigate to subscription screen
     const selectedTab = tabs.find(t => t.id === tabId);
     if (selectedTab?.isPaywall) {
-      console.log("🔓 Opening RevenueCat paywall from Premium tab");
-      handleUpgrade();
+      console.log("💎 Opening Subscription & Billing screen");
+      router.push('/main/subscription');
       return;
     }
     
     setActiveTab(tabId);
   };
 
-  // Handle upgrade from any component - Show RevenueCat paywall
-  const handleUpgrade = async () => {
-    console.log("🔓 Showing RevenueCat paywall for upgrade");
-    const { showPaywall } = await import('@/utils/subscriptions');
-    await showPaywall();
+  // Handle upgrade from any component - Navigate to subscription screen
+  const handleUpgrade = () => {
+    console.log("💎 Navigating to Subscription & Billing screen");
+    router.push('/main/subscription');
   };
 
   // Handle search again from insights
@@ -229,6 +228,19 @@ export default function UnifiedMainScreen() {
         barStyle={theme.isDark ? "light-content" : "dark-content"}
         backgroundColor={theme.colors.background.primary}
       />
+
+      {/* Header with Subscription Button */}
+      <View style={styles.headerContainer}>
+        <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>
+          Cook AI
+        </Text>
+        <TouchableOpacity
+          style={styles.subscriptionButton}
+          onPress={() => subscriptionRouter.push('/main/subscription')}
+        >
+          <Ionicons name="diamond-outline" size={24} color="#007AFF" />
+        </TouchableOpacity>
+      </View>
 
       {/* Dynamic content based on active tab */}
       <View style={styles.contentContainer}>{renderCurrentSection()}</View>

@@ -89,10 +89,9 @@ export default function DishDetailScreen() {
             { text: "Not Now", style: "cancel" },
             { 
               text: "Upgrade", 
-              onPress: async () => {
-                console.log("🔓 Opening RevenueCat paywall from like limit (detail)");
-                const { showPaywall } = await import('@/utils/subscriptions');
-                await showPaywall();
+              onPress: () => {
+                console.log("💎 Opening Subscription screen from like limit (detail)");
+                router.push('/main/subscription');
               },
               style: "default"
             }

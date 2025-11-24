@@ -71,7 +71,7 @@ export const useDishActions = ({
             {
               text: 'Upgrade',
               onPress: () => {
-                console.log('🔓 Opening RevenueCat paywall from like limit');
+                console.log('💎 Opening Subscription screen from like limit');
                 onUpgrade?.();
               },
               style: 'default',
@@ -122,7 +122,7 @@ export const useDishActions = ({
             {
               text: 'Upgrade',
               onPress: () => {
-                console.log('🔓 Opening RevenueCat paywall from save limit');
+                console.log('💎 Opening Subscription screen from save limit');
                 onUpgrade?.();
               },
               style: 'default',

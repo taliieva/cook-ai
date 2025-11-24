@@ -52,6 +52,12 @@ export default function MainLayout() {
           gestureEnabled: true, // Allow swipe back within app
         }}
       />
+      <Stack.Screen 
+        name="subscription" 
+        options={{
+          gestureEnabled: true, // Allow swipe back within app
+        }}
+      />
     </Stack>
   );
 }
